@@ -47,7 +47,7 @@ spec:
               size:
                 description: Size defines the number of Memcached instances
                 format: int32
-                maximum: 3
+                maximum: 2 # decrease maximum to 2
                 minimum: 1
                 type: integer
               mode:
