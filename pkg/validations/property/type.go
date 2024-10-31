@@ -10,13 +10,13 @@ func (t *Type) Name() string {
 	return "Type"
 }
 
-func (t *Type) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (t *Type) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.Type = ""
 		newProperty.Type = ""
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	var err error

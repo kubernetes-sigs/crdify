@@ -13,13 +13,13 @@ func (e *Enum) Name() string {
 	return "Enum"
 }
 
-func (e *Enum) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (e *Enum) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.Enum = []apiextensionsv1.JSON{}
 		newProperty.Enum = []apiextensionsv1.JSON{}
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	oldEnums := sets.New[string]()

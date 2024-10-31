@@ -11,13 +11,13 @@ func (d *Default) Name() string {
     return "Default"
 }
 
-func (d *Default) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (d *Default) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.Default = nil
 		newProperty.Default = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	var err error

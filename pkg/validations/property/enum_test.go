@@ -114,7 +114,7 @@ func TestEnum(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.enum.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.enum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

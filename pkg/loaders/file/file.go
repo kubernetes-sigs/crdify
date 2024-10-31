@@ -33,6 +33,7 @@ func (f *File) Load(ctx context.Context, location url.URL) (*apiextensionsv1.Cus
 	if err != nil {
 		return nil, fmt.Errorf("opening file %q: %w", filePath, err)
 	}
+	defer file.Close()
 
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {

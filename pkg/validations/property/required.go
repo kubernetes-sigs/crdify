@@ -12,13 +12,13 @@ func (r *Required) Name() string {
 	return "Required"
 }
 
-func (r *Required) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (r *Required) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		newProperty.Required = []string{}
 		oldProperty.Required = []string{}
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	oldRequired := sets.New(diff.Old().Required...)

@@ -22,13 +22,13 @@ func (m *Minimum) Name() string {
 	return "Minimum"
 }
 
-func (m *Minimum) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *Minimum) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.Minimum = nil
 		newProperty.Minimum = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := minVerification(diff.Old().Minimum, diff.New().Minimum)
@@ -45,13 +45,13 @@ func (m *MinItems) Name() string {
 	return "MinItems"
 }
 
-func (m *MinItems) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *MinItems) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.MinItems = nil
 		newProperty.MinItems = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := minVerification(diff.Old().MinItems, diff.New().MinItems)
@@ -68,13 +68,13 @@ func (m *MinLength) Name() string {
 	return "MinLength"
 }
 
-func (m *MinLength) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *MinLength) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.MinLength = nil
 		newProperty.MinLength = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := minVerification(diff.Old().MinLength, diff.New().MinLength)
@@ -91,13 +91,13 @@ func (m *MinProperties) Name() string {
 	return "MinProperties"
 }
 
-func (m *MinProperties) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *MinProperties) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.MinProperties = nil
 		newProperty.MinProperties = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := minVerification(diff.Old().MinProperties, diff.New().MinProperties)

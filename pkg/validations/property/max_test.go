@@ -80,7 +80,7 @@ func TestMaximum(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maximum.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.maximum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -158,7 +158,7 @@ func TestMaxItems(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maxItems.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.maxItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -236,7 +236,7 @@ func TestMaxLength(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maxLength.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.maxLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -314,7 +314,7 @@ func TestMaxProperties(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maxProperties.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.maxProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

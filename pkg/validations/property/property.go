@@ -4,32 +4,32 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-type PropertyDiff interface {
+type Diff interface {
 	Old() *apiextensionsv1.JSONSchemaProps
 	New() *apiextensionsv1.JSONSchemaProps
 }
 
-func NewPropertyDiff(old, new *apiextensionsv1.JSONSchemaProps) PropertyDiff {
-	return &propertyDiff{
+func NewDiff(old, new *apiextensionsv1.JSONSchemaProps) Diff {
+	return &diff{
 		old: old,
 		new: new,
 	}
 }
 
-type propertyDiff struct {
+type diff struct {
 	old *apiextensionsv1.JSONSchemaProps
 	new *apiextensionsv1.JSONSchemaProps
 }
 
-func (pd *propertyDiff) Old() *apiextensionsv1.JSONSchemaProps {
+func (pd *diff) Old() *apiextensionsv1.JSONSchemaProps {
 	return pd.old.DeepCopy()
 }
 
-func (pd *propertyDiff) New() *apiextensionsv1.JSONSchemaProps {
+func (pd *diff) New() *apiextensionsv1.JSONSchemaProps {
 	return pd.new.DeepCopy()
 }
 
-type PropertyValidation interface {
-	Validate(PropertyDiff) (bool, error)
+type Validation interface {
+	Validate(Diff) (bool, error)
 	Name() string
 }

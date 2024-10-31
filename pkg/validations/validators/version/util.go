@@ -37,8 +37,8 @@ func FlattenCRDVersion(crdVersion apiextensionsv1.CustomResourceDefinitionVersio
 	return flatMap
 }
 
-func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProps) map[string]property.PropertyDiff {
-	diffMap := map[string]property.PropertyDiff{}
+func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProps) map[string]property.Diff {
+	diffMap := map[string]property.Diff{}
 	for prop, oldSchema := range old {
 		// Create a copy of the old schema and set the properties to nil.
 		// In theory this will make it so we don't provide a diff for a parent property
@@ -52,7 +52,7 @@ func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProp
 		// In the event the property no longer exists on the new version
 		// create a diff entry with the new value being empty
 		if !ok {
-			diffMap[prop] = property.NewPropertyDiff(oldSchemaCopy, &apiextensionsv1.JSONSchemaProps{})
+			diffMap[prop] = property.NewDiff(oldSchemaCopy, &apiextensionsv1.JSONSchemaProps{})
 		}
 
 		// Do the same copy and unset logic for the new schema properties
@@ -61,7 +61,7 @@ func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProp
 		newSchemaCopy.Properties = nil
 
 		if !equality.Semantic.DeepEqual(oldSchemaCopy, newSchemaCopy) {
-			diffMap[prop] = property.NewPropertyDiff(oldSchemaCopy, newSchemaCopy)
+			diffMap[prop] = property.NewDiff(oldSchemaCopy, newSchemaCopy)
 		}
 	}
 

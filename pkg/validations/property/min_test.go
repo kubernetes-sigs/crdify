@@ -80,7 +80,7 @@ func TestMinimum(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minimum.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.minimum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -158,7 +158,7 @@ func TestMinLength(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minLength.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.minLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -236,7 +236,7 @@ func TestMinItems(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minItems.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.minItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -314,7 +314,7 @@ func TestMinProperties(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minProperties.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.minProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

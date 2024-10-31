@@ -89,7 +89,7 @@ func TestDefault(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.defaultValidation.Validate(NewPropertyDiff(tc.oldProperty, tc.newProperty))
+			handled, err := tc.defaultValidation.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

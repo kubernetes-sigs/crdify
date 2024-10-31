@@ -22,13 +22,13 @@ func (m *Maximum) Name() string {
 	return "Maximum"
 }
 
-func (m *Maximum) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *Maximum) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.Maximum = nil
 		newProperty.Maximum = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := maxVerification(diff.Old().Maximum, diff.New().Maximum)
@@ -45,13 +45,13 @@ func (m *MaxItems) Name() string {
 	return "MaxItems"
 }
 
-func (m *MaxItems) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *MaxItems) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.MaxItems = nil
 		newProperty.MaxItems = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := maxVerification(diff.Old().MaxItems, diff.New().MaxItems)
@@ -68,13 +68,13 @@ func (m *MaxLength) Name() string {
 	return "MaxLength"
 }
 
-func (m *MaxLength) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *MaxLength) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.MaxLength = nil
 		newProperty.MaxLength = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := maxVerification(diff.Old().MaxLength, diff.New().MaxLength)
@@ -91,13 +91,13 @@ func (m *MaxProperties) Name() string {
 	return "MaxProperties"
 }
 
-func (m *MaxProperties) Validate(diff PropertyDiff) (bool, error) {
-	reset := func(diff PropertyDiff) PropertyDiff {
+func (m *MaxProperties) Validate(diff Diff) (bool, error) {
+	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
 		oldProperty.MaxProperties = nil
 		newProperty.MaxProperties = nil
-		return NewPropertyDiff(oldProperty, newProperty)
+		return NewDiff(oldProperty, newProperty)
 	}
 
 	err := maxVerification(diff.Old().MaxProperties, diff.New().MaxProperties)

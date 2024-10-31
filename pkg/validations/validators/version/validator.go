@@ -25,14 +25,14 @@ type Validator struct {
 type SameVersionConfig struct {
 	UnhandledFailureMode FailureMode
 	Skip                 bool
-	Validations          []property.PropertyValidation
+	Validations          []property.Validation
 }
 
 type ServedVersionConfig struct {
 	UnhandledFailureMode FailureMode
 	Skip                 bool
 	IgnoreConversion     bool
-	Validations          []property.PropertyValidation
+	Validations          []property.Validation
 }
 
 type ValidatorOption func(*Validator)
@@ -54,13 +54,13 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 		sameVersionConfig: SameVersionConfig{
 			UnhandledFailureMode: FailureModeClosed,
 			Skip:                 false,
-			Validations:          []property.PropertyValidation{},
+			Validations:          []property.Validation{},
 		},
 		servedVersionConfig: ServedVersionConfig{
 			UnhandledFailureMode: FailureModeClosed,
 			Skip:                 false,
 			IgnoreConversion:     false,
-			Validations:          []property.PropertyValidation{},
+			Validations:          []property.Validation{},
 		},
 	}
 
@@ -77,11 +77,17 @@ func (v *Validator) Name() string {
 func (v *Validator) Validate(old, new *apiextensionsv1.CustomResourceDefinition) error {
 	errs := []error{}
 	if !v.sameVersionConfig.Skip {
-		errs = append(errs, v.ValidateSameVersions(old, new))
+		err := v.ValidateSameVersions(old, new)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("validating same versions: %w", err))
+		}
 	}
 
 	if !v.servedVersionConfig.Skip {
-		errs = append(errs, v.ValidateServedVersions(new))
+		err := v.ValidateServedVersions(new)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("validating new served versions: %w", err))
+		}
 	}
 	return errors.Join(errs...)
 }
@@ -131,7 +137,7 @@ func (v *Validator) ValidateServedVersions(crd *apiextensionsv1.CustomResourceDe
 	return errors.Join(errs...)
 }
 
-func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, failureMode FailureMode, validations []property.PropertyValidation) error {
+func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, failureMode FailureMode, validations []property.Validation) error {
 	oldFlattened := FlattenCRDVersion(old)
 	newFlattened := FlattenCRDVersion(new)
 
