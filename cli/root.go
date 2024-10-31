@@ -39,6 +39,7 @@ func NewRootCommand() *cobra.Command {
 		&property.MinLength{},
 		&property.MinProperties{},
 	}
+
 	// TODO: load this dynamically based on a configuration
 	validator := crd.NewValidator(
 		crd.WithValidations(
@@ -57,6 +58,7 @@ func NewRootCommand() *cobra.Command {
 			),
 			&crd.Scope{},
 			&crd.ExistingFieldRemoval{},
+			&crd.StoredVersionRemoval{},
 		),
 	)
 
@@ -91,6 +93,7 @@ func NewRootCommand() *cobra.Command {
 			}
 		},
 	}
+	rootCmd.AddCommand(NewVersionCommand())
 
 	return rootCmd
 }
