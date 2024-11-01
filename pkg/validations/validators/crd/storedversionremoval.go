@@ -21,10 +21,16 @@ func (svr *StoredVersionRemoval) Validate(old, new *apiextensionsv1.CustomResour
 		}
 	}
 
+	removedVersions := []string{}
 	for _, storedVersion := range old.Status.StoredVersions {
 		if !newVersions.Has(storedVersion) {
-			return fmt.Errorf("stored version %q removed", storedVersion)
+			removedVersions = append(removedVersions, storedVersion)
 		}
 	}
+
+	if len(removedVersions) > 0 {
+		return fmt.Errorf("stored versions %v removed", removedVersions)
+	}
+
 	return nil
 }
