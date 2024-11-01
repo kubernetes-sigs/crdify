@@ -5,7 +5,6 @@ go 1.22.5
 require (
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
-	github.com/everettraven/buoy v0.5.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/openshift/crd-schema-checker v0.0.0-20241014171011-8425fdfe9988
 	github.com/spf13/afero v1.1.2
