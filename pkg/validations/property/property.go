@@ -1,6 +1,7 @@
 package property
 
 import (
+	"github.com/everettraven/crd-diff/pkg/validations/results"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
@@ -30,6 +31,6 @@ func (pd *diff) New() *apiextensionsv1.JSONSchemaProps {
 }
 
 type Validation interface {
-	Validate(Diff) (bool, error)
+	Validate(Diff) (bool, *results.Result)
 	Name() string
 }

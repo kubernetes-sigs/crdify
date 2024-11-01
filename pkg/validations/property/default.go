@@ -3,15 +3,17 @@ package property
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/everettraven/crd-diff/pkg/validations/results"
 )
 
 type Default struct{}
 
 func (d *Default) Name() string {
-    return "Default"
+	return "Default"
 }
 
-func (d *Default) Validate(diff Diff) (bool, error) {
+func (d *Default) Validate(diff Diff) (bool, *results.Result) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -31,5 +33,8 @@ func (d *Default) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("default value changed from %q to %q", string(diff.Old().Default.Raw), string(diff.New().Default.Raw))
 	}
 
-	return IsHandled(diff, reset), err
+	return IsHandled(diff, reset), &results.Result{
+		Error:      err,
+		Subresults: []*results.Result{},
+	}
 }

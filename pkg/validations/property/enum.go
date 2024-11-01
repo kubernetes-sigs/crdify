@@ -3,6 +3,7 @@ package property
 import (
 	"fmt"
 
+	"github.com/everettraven/crd-diff/pkg/validations/results"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -13,7 +14,7 @@ func (e *Enum) Name() string {
 	return "Enum"
 }
 
-func (e *Enum) Validate(diff Diff) (bool, error) {
+func (e *Enum) Validate(diff Diff) (bool, *results.Result) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -41,5 +42,8 @@ func (e *Enum) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("enums %v removed from the set of previously allowed values", diffEnums.UnsortedList())
 	}
 
-	return IsHandled(diff, reset), err
+	return IsHandled(diff, reset), &results.Result{
+		Error:      err,
+		Subresults: []*results.Result{},
+	}
 }

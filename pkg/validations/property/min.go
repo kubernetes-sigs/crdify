@@ -3,6 +3,8 @@ package property
 import (
 	"cmp"
 	"fmt"
+
+	"github.com/everettraven/crd-diff/pkg/validations/results"
 )
 
 func minVerification[T cmp.Ordered](older *T, newer *T) error {
@@ -22,7 +24,7 @@ func (m *Minimum) Name() string {
 	return "Minimum"
 }
 
-func (m *Minimum) Validate(diff Diff) (bool, error) {
+func (m *Minimum) Validate(diff Diff) (bool, *results.Result) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -36,7 +38,10 @@ func (m *Minimum) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("minimum: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), err
+	return IsHandled(diff, reset), &results.Result{
+		Error:      err,
+		Subresults: []*results.Result{},
+	}
 }
 
 type MinItems struct{}
@@ -45,7 +50,7 @@ func (m *MinItems) Name() string {
 	return "MinItems"
 }
 
-func (m *MinItems) Validate(diff Diff) (bool, error) {
+func (m *MinItems) Validate(diff Diff) (bool, *results.Result) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -59,7 +64,10 @@ func (m *MinItems) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("minItems: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), err
+	return IsHandled(diff, reset), &results.Result{
+		Error:      err,
+		Subresults: []*results.Result{},
+	}
 }
 
 type MinLength struct{}
@@ -68,7 +76,7 @@ func (m *MinLength) Name() string {
 	return "MinLength"
 }
 
-func (m *MinLength) Validate(diff Diff) (bool, error) {
+func (m *MinLength) Validate(diff Diff) (bool, *results.Result) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -82,7 +90,10 @@ func (m *MinLength) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("minLength: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), err
+	return IsHandled(diff, reset), &results.Result{
+		Error:      err,
+		Subresults: []*results.Result{},
+	}
 }
 
 type MinProperties struct{}
@@ -91,7 +102,7 @@ func (m *MinProperties) Name() string {
 	return "MinProperties"
 }
 
-func (m *MinProperties) Validate(diff Diff) (bool, error) {
+func (m *MinProperties) Validate(diff Diff) (bool, *results.Result) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -105,5 +116,8 @@ func (m *MinProperties) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("minProperties: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), err
+	return IsHandled(diff, reset), &results.Result{
+		Error:      err,
+		Subresults: []*results.Result{},
+	}
 }

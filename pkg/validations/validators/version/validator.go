@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/everettraven/crd-diff/pkg/validations/property"
+	"github.com/everettraven/crd-diff/pkg/validations/results"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	versionhelper "k8s.io/apimachinery/pkg/version"
 )
@@ -74,26 +75,36 @@ func (v *Validator) Name() string {
 	return "Version"
 }
 
-func (v *Validator) Validate(old, new *apiextensionsv1.CustomResourceDefinition) error {
-	errs := []error{}
+func (v *Validator) Validate(old, new *apiextensionsv1.CustomResourceDefinition) *results.Result {
+	result := &results.Result{
+		Subresults: []*results.Result{},
+	}
 	if !v.sameVersionConfig.Skip {
-		err := v.ValidateSameVersions(old, new)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("validating same versions: %w", err))
+		res := v.ValidateSameVersions(old, new)
+		if res != nil {
+			result.Subresults = append(result.Subresults, res)
+			if res.Error != nil {
+				result.Error = errors.New("checking versions for compatibility")
+			}
 		}
 	}
 
 	if !v.servedVersionConfig.Skip {
-		err := v.ValidateServedVersions(new)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("validating new served versions: %w", err))
+		res := v.ValidateServedVersions(new)
+		if res != nil {
+			result.Subresults = append(result.Subresults, res)
+			if res.Error != nil {
+				result.Error = errors.New("checking versions for compatibility")
+			}
 		}
 	}
-	return errors.Join(errs...)
+	return result
 }
 
-func (v *Validator) ValidateSameVersions(old, new *apiextensionsv1.CustomResourceDefinition) error {
-	errs := []error{}
+func (v *Validator) ValidateSameVersions(old, new *apiextensionsv1.CustomResourceDefinition) *results.Result {
+	result := &results.Result{
+		Subresults: []*results.Result{},
+	}
 	for _, oldVersion := range old.Spec.Versions {
 		newVersion := GetCRDVersionByName(new, oldVersion.Name)
 		// in this case, there is nothing to compare. Generally, the removal
@@ -106,14 +117,24 @@ func (v *Validator) ValidateSameVersions(old, new *apiextensionsv1.CustomResourc
 			continue
 		}
 
-		errs = append(errs, CompareVersions(oldVersion, *newVersion, v.sameVersionConfig.UnhandledFailureMode, v.sameVersionConfig.Validations))
+		res := CompareVersions(oldVersion, *newVersion, v.sameVersionConfig.UnhandledFailureMode, v.sameVersionConfig.Validations)
+		if res != nil {
+			subResult := &results.Result{
+				Subresults: []*results.Result{res},
+			}
+			if res.Error != nil {
+				result.Error = errors.New("comparing same versions")
+				subResult.Error = fmt.Errorf("comparing version %q to version %q", oldVersion.Name, newVersion.Name)
+			}
+			result.Subresults = append(result.Subresults, subResult)
+		}
 	}
-	return errors.Join(errs...)
+	return result
 }
 
-func (v *Validator) ValidateServedVersions(crd *apiextensionsv1.CustomResourceDefinition) error {
+func (v *Validator) ValidateServedVersions(crd *apiextensionsv1.CustomResourceDefinition) *results.Result {
 	// If conversion webhook is specified, pass check
-	if crd.Spec.Conversion != nil && crd.Spec.Conversion.Strategy == apiextensionsv1.WebhookConverter {
+	if !v.servedVersionConfig.IgnoreConversion && crd.Spec.Conversion != nil && crd.Spec.Conversion.Strategy == apiextensionsv1.WebhookConverter {
 		return nil
 	}
 
@@ -128,38 +149,82 @@ func (v *Validator) ValidateServedVersions(crd *apiextensionsv1.CustomResourceDe
 		return versionhelper.CompareKubeAwareVersionStrings(a.Name, b.Name)
 	})
 
-	errs := []error{}
+	result := &results.Result{
+		Subresults: []*results.Result{},
+	}
 	for i, oldVersion := range servedVersions[:len(servedVersions)-1] {
 		for _, newVersion := range servedVersions[i+1:] {
-			errs = append(errs, CompareVersions(oldVersion, newVersion, v.servedVersionConfig.UnhandledFailureMode, v.servedVersionConfig.Validations))
+			res := CompareVersions(oldVersion, newVersion, v.servedVersionConfig.UnhandledFailureMode, v.servedVersionConfig.Validations)
+			if res != nil {
+				subResult := &results.Result{
+					Subresults: []*results.Result{res},
+				}
+				if res.Error != nil {
+					result.Error = errors.New("comparing served versions")
+					subResult.Error = fmt.Errorf("comparing version %q to version %q", oldVersion.Name, newVersion.Name)
+				}
+				result.Subresults = append(result.Subresults, subResult)
+			}
 		}
 	}
-	return errors.Join(errs...)
+	return result
 }
 
-func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, failureMode FailureMode, validations []property.Validation) error {
+func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, failureMode FailureMode, validations []property.Validation) *results.Result {
 	oldFlattened := FlattenCRDVersion(old)
 	newFlattened := FlattenCRDVersion(new)
 
 	diffs := FlattenedCRDVersionDiff(oldFlattened, newFlattened)
-	errs := []error{}
+	result := &results.Result{
+		Subresults: []*results.Result{},
+	}
 	for property, diff := range diffs {
-		handled := false
-		for _, validation := range validations {
-			ok, err := validation.Validate(diff)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("old version %q compared to new version %q, property %q failed validation %q: %w", old.Name, new.Name, property, validation.Name(), err))
+		res := ComparePropertyDiff(diff, failureMode, validations)
+		if res != nil {
+			subResult := &results.Result{
+				Subresults: []*results.Result{res},
 			}
-			// if the validation handled this difference continue to the next difference
-			if ok {
-				handled = true
-				break
+			if res.Error != nil {
+				result.Error = errors.New("property validation failures")
+				propError := fmt.Errorf("property %q", property)
+				subResult.Error = propError
 			}
-		}
-
-		if failureMode == FailureModeClosed && !handled {
-			errs = append(errs, fmt.Errorf("old version %q compared to new version %q, property %q has unknown change, refusing to determine that change is safe", old.Name, new.Name, property))
+			result.Subresults = append(result.Subresults, subResult)
 		}
 	}
-	return errors.Join(errs...)
+	return result
+}
+
+func ComparePropertyDiff(diff property.Diff, failureMode FailureMode, validations []property.Validation) *results.Result {
+	result := &results.Result{
+		Subresults: []*results.Result{},
+	}
+	handled := false
+	for _, validation := range validations {
+		ok, res := validation.Validate(diff)
+		if res != nil {
+			subResult := &results.Result{
+				Subresults: []*results.Result{res},
+			}
+			if res.Error != nil {
+				result.Error = errors.New("failed validations")
+				subResult.Error = fmt.Errorf("%q validation failed", validation.Name())
+			}
+			result.Subresults = append(result.Subresults, subResult)
+		}
+		// if the validation handled this difference continue to the next difference
+		if ok {
+			handled = true
+			break
+		}
+	}
+
+	if failureMode == FailureModeClosed && !handled {
+		result.Error = errors.New("validation failed")
+		result.Subresults = append(result.Subresults, &results.Result{
+			Error:      errors.New("unknown change(s), refusing to determine that change is safe"),
+			Subresults: []*results.Result{},
+		})
+	}
+	return result
 }

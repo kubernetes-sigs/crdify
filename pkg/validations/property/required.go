@@ -3,6 +3,7 @@ package property
 import (
 	"fmt"
 
+	"github.com/everettraven/crd-diff/pkg/validations/results"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -12,7 +13,7 @@ func (r *Required) Name() string {
 	return "Required"
 }
 
-func (r *Required) Validate(diff Diff) (bool, error) {
+func (r *Required) Validate(diff Diff) (bool, *results.Result) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -30,5 +31,8 @@ func (r *Required) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("new required fields %v added", diffRequired.UnsortedList())
 	}
 
-	return IsHandled(diff, reset), err
+	return IsHandled(diff, reset), &results.Result{
+		Error:      err,
+		Subresults: []*results.Result{},
+	}
 }

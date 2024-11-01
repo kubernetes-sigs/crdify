@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"io"
 	"log"
 	"net/url"
@@ -90,7 +91,8 @@ Example use cases:
 
 			err = validator.Validate(oldCrd, newCrd)
 			if err != nil {
-				log.Fatalf("comparing old and new CustomResourceDefinitions: %v", err)
+				baseErr := errors.New("comparing old and new CustomResourceDefinitions")
+				log.Fatal(errors.Join(baseErr, err))
 			}
 		},
 	}
