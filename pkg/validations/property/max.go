@@ -3,8 +3,6 @@ package property
 import (
 	"cmp"
 	"fmt"
-
-	"github.com/everettraven/crd-diff/pkg/validations/results"
 )
 
 func maxVerification[T cmp.Ordered](older *T, newer *T) error {
@@ -21,10 +19,10 @@ func maxVerification[T cmp.Ordered](older *T, newer *T) error {
 type Maximum struct{}
 
 func (m *Maximum) Name() string {
-	return "Maximum"
+	return "maximum"
 }
 
-func (m *Maximum) Validate(diff Diff) (bool, *results.Result) {
+func (m *Maximum) Validate(diff Diff) (bool, error) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -38,19 +36,16 @@ func (m *Maximum) Validate(diff Diff) (bool, *results.Result) {
 		err = fmt.Errorf("maximum: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), &results.Result{
-		Error:      err,
-		Subresults: []*results.Result{},
-	}
+	return IsHandled(diff, reset), err
 }
 
 type MaxItems struct{}
 
 func (m *MaxItems) Name() string {
-	return "MaxItems"
+	return "maxItems"
 }
 
-func (m *MaxItems) Validate(diff Diff) (bool, *results.Result) {
+func (m *MaxItems) Validate(diff Diff) (bool, error) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -64,19 +59,16 @@ func (m *MaxItems) Validate(diff Diff) (bool, *results.Result) {
 		err = fmt.Errorf("maxItems: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), &results.Result{
-		Error:      err,
-		Subresults: []*results.Result{},
-	}
+	return IsHandled(diff, reset), err
 }
 
 type MaxLength struct{}
 
 func (m *MaxLength) Name() string {
-	return "MaxLength"
+	return "maxLength"
 }
 
-func (m *MaxLength) Validate(diff Diff) (bool, *results.Result) {
+func (m *MaxLength) Validate(diff Diff) (bool, error) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -90,19 +82,16 @@ func (m *MaxLength) Validate(diff Diff) (bool, *results.Result) {
 		err = fmt.Errorf("maxLength: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), &results.Result{
-		Error:      err,
-		Subresults: []*results.Result{},
-	}
+	return IsHandled(diff, reset), err
 }
 
 type MaxProperties struct{}
 
 func (m *MaxProperties) Name() string {
-	return "MaxProperties"
+	return "maxProperties"
 }
 
-func (m *MaxProperties) Validate(diff Diff) (bool, *results.Result) {
+func (m *MaxProperties) Validate(diff Diff) (bool, error) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -116,8 +105,5 @@ func (m *MaxProperties) Validate(diff Diff) (bool, *results.Result) {
 		err = fmt.Errorf("maxProperties: %s", err.Error())
 	}
 
-	return IsHandled(diff, reset), &results.Result{
-		Error:      err,
-		Subresults: []*results.Result{},
-	}
+	return IsHandled(diff, reset), err
 }

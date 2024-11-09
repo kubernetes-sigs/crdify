@@ -3,7 +3,6 @@ package crd
 import (
 	"fmt"
 
-	"github.com/everettraven/crd-diff/pkg/validations/results"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -11,10 +10,10 @@ import (
 type StoredVersionRemoval struct{}
 
 func (svr *StoredVersionRemoval) Name() string {
-	return "StoredVersionRemoval"
+	return "storedVersionRemoval"
 }
 
-func (svr *StoredVersionRemoval) Validate(old, new *apiextensionsv1.CustomResourceDefinition) *results.Result {
+func (svr *StoredVersionRemoval) Validate(old, new *apiextensionsv1.CustomResourceDefinition) ValidationResult {
 	newVersions := sets.New[string]()
 	for _, version := range new.Spec.Versions {
 		if !newVersions.Has(version.Name) {
@@ -29,12 +28,13 @@ func (svr *StoredVersionRemoval) Validate(old, new *apiextensionsv1.CustomResour
 		}
 	}
 
-	if len(removedVersions) > 0 {
-		return &results.Result{
-			Error:      fmt.Errorf("stored versions %v removed", removedVersions),
-			Subresults: []*results.Result{},
-		}
+	vr := &validationResult{
+		Validation: svr.Name(),
 	}
 
-	return nil
+	if len(removedVersions) > 0 {
+		vr.Err = fmt.Sprintf("stored versions %v removed", removedVersions)
+	}
+
+	return vr
 }

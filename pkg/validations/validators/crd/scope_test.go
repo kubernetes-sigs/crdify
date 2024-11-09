@@ -46,8 +46,8 @@ func TestScope(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.scope.Validate(tc.old, tc.new)
-			require.Equal(t, tc.shouldError, err != nil)
+			result := tc.scope.Validate(tc.old, tc.new)
+			require.Equal(t, tc.shouldError, result.Error(0) != nil)
 		})
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/everettraven/crd-diff/pkg/validations/property"
-	"github.com/everettraven/crd-diff/pkg/validations/results"
+	"github.com/everettraven/crd-diff/pkg/validations/validators/crd"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	versionhelper "k8s.io/apimachinery/pkg/version"
 )
@@ -72,39 +72,27 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 }
 
 func (v *Validator) Name() string {
-	return "Version"
+	return "version"
 }
 
-func (v *Validator) Validate(old, new *apiextensionsv1.CustomResourceDefinition) *results.Result {
-	result := &results.Result{
-		Subresults: []*results.Result{},
+func (v *Validator) Validate(old, new *apiextensionsv1.CustomResourceDefinition) crd.ValidationResult {
+	result := Result{
+        Validation: v.Name(),
+		SameVersionResults:   []VersionCompareResult{},
+		ServedVersionResults: []VersionCompareResult{},
 	}
 	if !v.sameVersionConfig.Skip {
-		res := v.ValidateSameVersions(old, new)
-		if res != nil {
-			result.Subresults = append(result.Subresults, res)
-			if res.Error != nil {
-				result.Error = errors.New("checking versions for compatibility")
-			}
-		}
+		result.SameVersionResults = v.ValidateSameVersions(old, new)
 	}
 
 	if !v.servedVersionConfig.Skip {
-		res := v.ValidateServedVersions(new)
-		if res != nil {
-			result.Subresults = append(result.Subresults, res)
-			if res.Error != nil {
-				result.Error = errors.New("checking versions for compatibility")
-			}
-		}
+		result.ServedVersionResults = v.ValidateServedVersions(new)
 	}
-	return result
+	return &result
 }
 
-func (v *Validator) ValidateSameVersions(old, new *apiextensionsv1.CustomResourceDefinition) *results.Result {
-	result := &results.Result{
-		Subresults: []*results.Result{},
-	}
+func (v *Validator) ValidateSameVersions(old, new *apiextensionsv1.CustomResourceDefinition) []VersionCompareResult {
+	vcrs := []VersionCompareResult{}
 	for _, oldVersion := range old.Spec.Versions {
 		newVersion := GetCRDVersionByName(new, oldVersion.Name)
 		// in this case, there is nothing to compare. Generally, the removal
@@ -117,25 +105,15 @@ func (v *Validator) ValidateSameVersions(old, new *apiextensionsv1.CustomResourc
 			continue
 		}
 
-		res := CompareVersions(oldVersion, *newVersion, v.sameVersionConfig.UnhandledFailureMode, v.sameVersionConfig.Validations)
-		if res != nil {
-			subResult := &results.Result{
-				Subresults: []*results.Result{res},
-			}
-			if res.Error != nil {
-				result.Error = errors.New("comparing same versions")
-				subResult.Error = fmt.Errorf("comparing version %q to version %q", oldVersion.Name, newVersion.Name)
-			}
-			result.Subresults = append(result.Subresults, subResult)
-		}
+		vcrs = append(vcrs, CompareVersions(oldVersion, *newVersion, v.sameVersionConfig.UnhandledFailureMode, v.sameVersionConfig.Validations))
 	}
-	return result
+	return vcrs
 }
 
-func (v *Validator) ValidateServedVersions(crd *apiextensionsv1.CustomResourceDefinition) *results.Result {
+func (v *Validator) ValidateServedVersions(crd *apiextensionsv1.CustomResourceDefinition) []VersionCompareResult {
 	// If conversion webhook is specified, pass check
 	if !v.servedVersionConfig.IgnoreConversion && crd.Spec.Conversion != nil && crd.Spec.Conversion.Strategy == apiextensionsv1.WebhookConverter {
-		return nil
+		return []VersionCompareResult{}
 	}
 
 	servedVersions := []apiextensionsv1.CustomResourceDefinitionVersion{}
@@ -149,68 +127,46 @@ func (v *Validator) ValidateServedVersions(crd *apiextensionsv1.CustomResourceDe
 		return versionhelper.CompareKubeAwareVersionStrings(a.Name, b.Name)
 	})
 
-	result := &results.Result{
-		Subresults: []*results.Result{},
-	}
+	vcrs := []VersionCompareResult{}
 	for i, oldVersion := range servedVersions[:len(servedVersions)-1] {
 		for _, newVersion := range servedVersions[i+1:] {
-			res := CompareVersions(oldVersion, newVersion, v.servedVersionConfig.UnhandledFailureMode, v.servedVersionConfig.Validations)
-			if res != nil {
-				subResult := &results.Result{
-					Subresults: []*results.Result{res},
-				}
-				if res.Error != nil {
-					result.Error = errors.New("comparing served versions")
-					subResult.Error = fmt.Errorf("comparing version %q to version %q", oldVersion.Name, newVersion.Name)
-				}
-				result.Subresults = append(result.Subresults, subResult)
-			}
+			vcrs = append(vcrs, CompareVersions(oldVersion, newVersion, v.servedVersionConfig.UnhandledFailureMode, v.servedVersionConfig.Validations))
 		}
 	}
-	return result
+	return vcrs
 }
 
-func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, failureMode FailureMode, validations []property.Validation) *results.Result {
+func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, failureMode FailureMode, validations []property.Validation) VersionCompareResult {
 	oldFlattened := FlattenCRDVersion(old)
 	newFlattened := FlattenCRDVersion(new)
 
 	diffs := FlattenedCRDVersionDiff(oldFlattened, newFlattened)
-	result := &results.Result{
-		Subresults: []*results.Result{},
+	result := VersionCompareResult{
+		VersionA:               old.Name,
+		VersionB:               new.Name,
+		PropertyCompareResults: []PropertyCompareResult{},
 	}
+
 	for property, diff := range diffs {
-		res := ComparePropertyDiff(diff, failureMode, validations)
-		if res != nil {
-			subResult := &results.Result{
-				Subresults: []*results.Result{res},
-			}
-			if res.Error != nil {
-				result.Error = errors.New("property validation failures")
-				propError := fmt.Errorf("property %q", property)
-				subResult.Error = propError
-			}
-			result.Subresults = append(result.Subresults, subResult)
-		}
+		errs := ComparePropertyDiff(diff, failureMode, validations)
+		result.PropertyCompareResults = append(result.PropertyCompareResults, PropertyCompareResult{
+			Property: property,
+			Errors: convert(errs, func(s error) string {
+				return s.Error()
+			}),
+		})
 	}
+
 	return result
 }
 
-func ComparePropertyDiff(diff property.Diff, failureMode FailureMode, validations []property.Validation) *results.Result {
-	result := &results.Result{
-		Subresults: []*results.Result{},
-	}
+func ComparePropertyDiff(diff property.Diff, failureMode FailureMode, validations []property.Validation) []error {
+	errs := []error{}
 	handled := false
 	for _, validation := range validations {
-		ok, res := validation.Validate(diff)
-		if res != nil {
-			subResult := &results.Result{
-				Subresults: []*results.Result{res},
-			}
-			if res.Error != nil {
-				result.Error = errors.New("failed validations")
-				subResult.Error = fmt.Errorf("%q validation failed", validation.Name())
-			}
-			result.Subresults = append(result.Subresults, subResult)
+		ok, err := validation.Validate(diff)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s validation failed: %w", validation.Name(), err))
 		}
 		// if the validation handled this difference continue to the next difference
 		if ok {
@@ -220,11 +176,15 @@ func ComparePropertyDiff(diff property.Diff, failureMode FailureMode, validation
 	}
 
 	if failureMode == FailureModeClosed && !handled {
-		result.Error = errors.New("validation failed")
-		result.Subresults = append(result.Subresults, &results.Result{
-			Error:      errors.New("unknown change(s), refusing to determine that change is safe"),
-			Subresults: []*results.Result{},
-		})
+		errs = append(errs, errors.New("unknown change(s), refusing to determine that change is safe"))
 	}
-	return result
+	return errs
+}
+
+func convert[S any, E any](s []S, convertFunc func(S) E) []E {
+	converted := make([]E, len(s))
+	for i, val := range s {
+		converted[i] = convertFunc(val)
+	}
+	return converted
 }

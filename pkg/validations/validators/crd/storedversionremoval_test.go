@@ -75,8 +75,8 @@ func TestStoredVersionRemoval(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.svr.Validate(tc.old, tc.new)
-			require.Equal(t, tc.shouldError, err != nil)
+			result := tc.svr.Validate(tc.old, tc.new)
+			require.Equal(t, tc.shouldError, result.Error(0) != nil)
 		})
 	}
 }

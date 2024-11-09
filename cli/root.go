@@ -1,11 +1,12 @@
 package cli
 
 import (
-	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/everettraven/crd-diff/pkg/config"
 	"github.com/everettraven/crd-diff/pkg/loaders/composite"
@@ -28,6 +29,11 @@ func NewRootCommand() *cobra.Command {
 	)
 
 	var configFile string
+	var outputFormat string
+
+	const outputFormatJSON = "json"
+	const outputFormatYAML = "yaml"
+	const outputFormatPlainText = "plaintext"
 
 	rootCmd := &cobra.Command{
 		Use:   "crd-diff <old> <new>",
@@ -89,16 +95,40 @@ Example use cases:
 
 			validator := config.ValidatorForConfig(*cfg)
 
-			err = validator.Validate(oldCrd, newCrd)
+			result := validator.Validate(oldCrd, newCrd)
+			err = result.Error(0)
 			if err != nil {
-				baseErr := errors.New("comparing old and new CustomResourceDefinitions")
-				log.Fatal(errors.Join(baseErr, err))
+				switch outputFormat {
+				case outputFormatPlainText:
+					var out strings.Builder
+					out.WriteString("comparing the CRDs identified incompatible changes\n\n")
+					out.WriteString("Incompatible Changes\n")
+					out.WriteString(strings.Repeat("-", 10) + "\n")
+					out.WriteString(err.Error())
+					out.WriteString(strings.Repeat("-", 10) + "\n")
+					log.Fatal(out.String())
+				case outputFormatJSON:
+					jsonOut, marshalError := result.JSON()
+					if marshalError != nil {
+						log.Fatalf("marshalling results to JSON: %w", marshalError)
+					}
+					fmt.Print(string(jsonOut))
+					os.Exit(1)
+				case outputFormatYAML:
+					yamlOut, marshalError := result.YAML()
+					if marshalError != nil {
+						log.Fatalf("marshalling results to YAML: %w", marshalError)
+					}
+					fmt.Print(string(yamlOut))
+					os.Exit(1)
+				}
 			}
 		},
 	}
 
 	rootCmd.AddCommand(NewVersionCommand())
 	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "the filepath to load the check configurations from")
+	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "plaintext", "the format the output should take when incompatibilities are identified. May be one of plaintext, json, yaml")
 
 	return rootCmd
 }

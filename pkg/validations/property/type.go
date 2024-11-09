@@ -2,17 +2,15 @@ package property
 
 import (
 	"fmt"
-
-	"github.com/everettraven/crd-diff/pkg/validations/results"
 )
 
 type Type struct{}
 
 func (t *Type) Name() string {
-	return "Type"
+	return "type"
 }
 
-func (t *Type) Validate(diff Diff) (bool, *results.Result) {
+func (t *Type) Validate(diff Diff) (bool, error) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -26,8 +24,5 @@ func (t *Type) Validate(diff Diff) (bool, *results.Result) {
 		err = fmt.Errorf("type changed from %q to %q", diff.Old().Type, diff.New().Type)
 	}
 
-	return IsHandled(diff, reset), &results.Result{
-		Error:      err,
-		Subresults: []*results.Result{},
-	}
+	return IsHandled(diff, reset), err
 }
