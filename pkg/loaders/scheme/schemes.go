@@ -7,4 +7,3 @@ const (
 	SchemeGit        = "git"
 	SchemeFile       = "file"
 )
-

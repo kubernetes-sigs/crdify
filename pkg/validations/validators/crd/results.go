@@ -17,7 +17,7 @@ type ValidationResult interface {
 
 type validationResult struct {
 	Validation string `json:"validation"`
-	Err      string `json:"error,omitempty"`
+	Err        string `json:"error,omitempty"`
 }
 
 func (vr *validationResult) Error(printDepth int) error {

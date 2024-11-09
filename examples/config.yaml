@@ -5,7 +5,7 @@
 checks:
   crd:
     scope:
-     enabled: true
+      enabled: true
     existingFieldRemoval:
       enabled: true
     storedVersionRemoval:
@@ -16,8 +16,13 @@ checks:
       unhandledFailureMode: "Closed"
       enum:
         enabled: true
+        removalEnforcement: "Strict"
+        additionEnforcement: "Strict"
       default:
         enabled: true
+        changeEnforcement: "Strict"
+        removalEnforcement: "Strict"
+        additionEnforcement: "Strict"
       required:
         enabled: true
       type:

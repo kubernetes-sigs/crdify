@@ -77,7 +77,7 @@ func (v *Validator) Name() string {
 
 func (v *Validator) Validate(old, new *apiextensionsv1.CustomResourceDefinition) crd.ValidationResult {
 	result := Result{
-        Validation: v.Name(),
+		Validation:           v.Name(),
 		SameVersionResults:   []VersionCompareResult{},
 		ServedVersionResults: []VersionCompareResult{},
 	}

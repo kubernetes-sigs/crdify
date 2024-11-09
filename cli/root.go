@@ -110,14 +110,14 @@ Example use cases:
 				case outputFormatJSON:
 					jsonOut, marshalError := result.JSON()
 					if marshalError != nil {
-						log.Fatalf("marshalling results to JSON: %w", marshalError)
+						log.Fatalf("marshalling results to JSON: %v", marshalError)
 					}
 					fmt.Print(string(jsonOut))
 					os.Exit(1)
 				case outputFormatYAML:
 					yamlOut, marshalError := result.YAML()
 					if marshalError != nil {
-						log.Fatalf("marshalling results to YAML: %w", marshalError)
+						log.Fatalf("marshalling results to YAML: %v", marshalError)
 					}
 					fmt.Print(string(yamlOut))
 					os.Exit(1)

@@ -48,6 +48,20 @@ func TestDefault(t *testing.T) {
 			defaultValidation: &Default{},
 		},
 		{
+			name:        "new default value, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Default: &apiextensionsv1.JSON{
+					Raw: []byte("foo"),
+				},
+			},
+			err:     nil,
+			handled: true,
+			defaultValidation: &Default{
+				AdditionEnforcement: DefaultValidationAdditionEnforcementNone,
+			},
+		},
+		{
 			name: "default value removed, error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				Default: &apiextensionsv1.JSON{
@@ -58,6 +72,20 @@ func TestDefault(t *testing.T) {
 			err:               errors.New("default value \"foo\" removed"),
 			handled:           true,
 			defaultValidation: &Default{},
+		},
+		{
+			name: "default value removed, removal enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				Default: &apiextensionsv1.JSON{
+					Raw: []byte("foo"),
+				},
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{},
+			err:         nil,
+			handled:     true,
+			defaultValidation: &Default{
+				RemovalEnforcement: DefaultValidationRemovalEnforcementNone,
+			},
 		},
 		{
 			name: "default value changed, error, handled",
@@ -74,6 +102,24 @@ func TestDefault(t *testing.T) {
 			err:               errors.New("default value changed from \"foo\" to \"bar\""),
 			handled:           true,
 			defaultValidation: &Default{},
+		},
+		{
+			name: "default value changed, change enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				Default: &apiextensionsv1.JSON{
+					Raw: []byte("foo"),
+				},
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Default: &apiextensionsv1.JSON{
+					Raw: []byte("bar"),
+				},
+			},
+			err:     nil,
+			handled: true,
+			defaultValidation: &Default{
+				ChangeEnforcement: DefaultValidationChangeEnforcementNone,
+			},
 		},
 		{
 			name: "different field changed, no error, not handled",

@@ -53,11 +53,16 @@ var StrictPropertyCheckConfig = PropertyCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		RemovalEnforcement:  property.EnumValidationRemovalEnforcementStrict,
+		AdditionEnforcement: property.EnumValidationAdditionEnforcementStrict,
 	},
 	Default: DefaultCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		ChangeEnforcement:   property.DefaultValidationChangeEnforcementStrict,
+		RemovalEnforcement:  property.DefaultValidationRemovalEnforcementStrict,
+		AdditionEnforcement: property.DefaultValidationAdditionEnforcementStrict,
 	},
 	Required: RequiredCheckConfig{
 		CheckConfig: CheckConfig{
@@ -163,15 +168,20 @@ type PropertyCheckConfig struct {
 }
 
 type CheckConfig struct {
-	Enabled bool
+	Enabled bool `json:"enabled"`
 }
 
 type EnumCheckConfig struct {
 	CheckConfig
+	RemovalEnforcement  property.EnumValidationRemovalEnforcement  `json:"removalEnforcement"`
+	AdditionEnforcement property.EnumValidationAdditionEnforcement `json:"additionEnforcement"`
 }
 
 type DefaultCheckConfig struct {
 	CheckConfig
+	ChangeEnforcement   property.DefaultValidationChangeEnforcement   `json:"changeEnforcement"`
+	RemovalEnforcement  property.DefaultValidationRemovalEnforcement  `json:"removalEnforcement"`
+	AdditionEnforcement property.DefaultValidationAdditionEnforcement `json:"additionEnforcement"`
 }
 
 type RequiredCheckConfig struct {
@@ -248,11 +258,18 @@ func ServedVersionConfigForServedVersionCheckConfig(cfg ServedVersionCheckConfig
 func PropertyValidationsForPropertyCheckConfig(cfg PropertyCheckConfig) []property.Validation {
 	validations := []property.Validation{}
 	if cfg.Enum.Enabled {
-		validations = append(validations, &property.Enum{})
+		validations = append(validations, &property.Enum{
+			RemovalEnforcement:  cfg.Enum.RemovalEnforcement,
+			AdditionEnforcement: cfg.Enum.AdditionEnforcement,
+		})
 	}
 
 	if cfg.Default.Enabled {
-		validations = append(validations, &property.Default{})
+		validations = append(validations, &property.Default{
+			ChangeEnforcement:   cfg.Default.ChangeEnforcement,
+			RemovalEnforcement:  cfg.Default.RemovalEnforcement,
+			AdditionEnforcement: cfg.Default.AdditionEnforcement,
+		})
 	}
 
 	if cfg.Required.Enabled {
