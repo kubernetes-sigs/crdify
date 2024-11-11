@@ -44,6 +44,20 @@ func TestType(t *testing.T) {
 			typeValidation: &Type{},
 		},
 		{
+			name: "type changed, change enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				Type: "string",
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Type: "integer",
+			},
+			err:     nil,
+			handled: true,
+			typeValidation: &Type{
+				ChangeEnforcement: TypeValidationChangeEnforcementNone,
+			},
+		},
+		{
 			name: "different field changed, no error, not handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
@@ -57,7 +71,7 @@ func TestType(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.typeValidation.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.typeValidation.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

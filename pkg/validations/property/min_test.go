@@ -43,7 +43,21 @@ func TestMinimum(t *testing.T) {
 			minimum: &Minimum{},
 		},
 		{
-			name: "minLength constraint decreased, no error, handled",
+			name:        "new minimum constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Minimum: ptr.To(10.0),
+			},
+			err:     nil,
+			handled: true,
+			minimum: &Minimum{
+				MinOptions: MinOptions{
+					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
+			name: "minimum constraint decreased, no error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(20.0),
 			},
@@ -55,7 +69,7 @@ func TestMinimum(t *testing.T) {
 			minimum: &Minimum{},
 		},
 		{
-			name: "minLength constraint increased, error, handled",
+			name: "minimum constraint increased, error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(10.0),
 			},
@@ -65,6 +79,22 @@ func TestMinimum(t *testing.T) {
 			err:     errors.New("minimum: constraint increased from 10 to 20"),
 			handled: true,
 			minimum: &Minimum{},
+		},
+		{
+			name: "minimum constraint increased, increase enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				Minimum: ptr.To(10.0),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Minimum: ptr.To(20.0),
+			},
+			err:     nil,
+			handled: true,
+			minimum: &Minimum{
+				MinOptions: MinOptions{
+					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
+				},
+			},
 		},
 		{
 			name: "different field changed, no error, not handled",
@@ -80,7 +110,7 @@ func TestMinimum(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minimum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.minimum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -121,6 +151,20 @@ func TestMinLength(t *testing.T) {
 			minLength: &MinLength{},
 		},
 		{
+			name:        "new minLength constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			minLength: &MinLength{
+				MinOptions: MinOptions{
+					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "minLength constraint decreased, no error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				MinLength: ptr.To(int64(20)),
@@ -145,6 +189,22 @@ func TestMinLength(t *testing.T) {
 			minLength: &MinLength{},
 		},
 		{
+			name: "minLength constraint increased, increase enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(10)),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(20)),
+			},
+			err:     nil,
+			handled: true,
+			minLength: &MinLength{
+				MinOptions: MinOptions{
+					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "different field changed, no error, not handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
@@ -158,7 +218,7 @@ func TestMinLength(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.minLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -199,6 +259,20 @@ func TestMinItems(t *testing.T) {
 			minItems: &MinItems{},
 		},
 		{
+			name:        "new minItems constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MinItems: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			minItems: &MinItems{
+				MinOptions: MinOptions{
+					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "minItems constraint decreased, no error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(20)),
@@ -223,6 +297,22 @@ func TestMinItems(t *testing.T) {
 			minItems: &MinItems{},
 		},
 		{
+			name: "minItems constraint increased, increase enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				MinItems: ptr.To(int64(10)),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MinItems: ptr.To(int64(20)),
+			},
+			err:     nil,
+			handled: true,
+			minItems: &MinItems{
+				MinOptions: MinOptions{
+					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "different field changed, no error, not handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
@@ -236,7 +326,7 @@ func TestMinItems(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.minItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -277,6 +367,20 @@ func TestMinProperties(t *testing.T) {
 			minProperties: &MinProperties{},
 		},
 		{
+			name:        "new minProperties constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MinProperties: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			minProperties: &MinProperties{
+				MinOptions: MinOptions{
+					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "minProperties constraint decreased, no error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(20)),
@@ -301,6 +405,22 @@ func TestMinProperties(t *testing.T) {
 			minProperties: &MinProperties{},
 		},
 		{
+			name: "minProperties constraint increased, increase enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				MinProperties: ptr.To(int64(10)),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MinProperties: ptr.To(int64(20)),
+			},
+			err:     nil,
+			handled: true,
+			minProperties: &MinProperties{
+				MinOptions: MinOptions{
+					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "different field changed, no error, not handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
@@ -314,7 +434,7 @@ func TestMinProperties(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.minProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.minProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

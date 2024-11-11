@@ -232,7 +232,7 @@ func TestEnum(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.enum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.enum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

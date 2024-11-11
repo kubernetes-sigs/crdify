@@ -48,6 +48,20 @@ func TestRequired(t *testing.T) {
 			required: &Required{},
 		},
 		{
+			name:        "new required field, new enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Required: []string{
+					"foo",
+				},
+			},
+			err:     nil,
+			handled: true,
+			required: &Required{
+				NewEnforcement: RequiredValidationNewEnforcementNone,
+			},
+		},
+		{
 			name: "different field changed, no error, not handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
@@ -61,7 +75,7 @@ func TestRequired(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.required.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.required.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

@@ -49,6 +49,10 @@ func (vr *ValidatorResult) Error(printDepth int) error {
 		validationErrors = append(validationErrors, validationResult.Error(printDepth+1))
 	}
 
+	if len(validationErrors) > 0 {
+		validationErrors = append([]error{errors.New("validations failed:")}, validationErrors...)
+	}
+
 	return errors.Join(validationErrors...)
 }
 

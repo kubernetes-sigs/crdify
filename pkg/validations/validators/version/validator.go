@@ -163,8 +163,11 @@ func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, f
 func ComparePropertyDiff(diff property.Diff, failureMode FailureMode, validations []property.Validation) []error {
 	errs := []error{}
 	handled := false
+	diffCopy := property.NewDiff(diff.Old(), diff.New())
+	var err error
+	var ok bool
 	for _, validation := range validations {
-		ok, err := validation.Validate(diff)
+		diffCopy, ok, err = validation.Validate(diffCopy)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s validation failed: %w", validation.Name(), err))
 		}

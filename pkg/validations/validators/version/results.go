@@ -26,10 +26,11 @@ func (r *Result) Error(printDepth int) error {
 	var sameVersionErr error
 	if errors.Join(sameVersionErrs...) != nil {
 		var out strings.Builder
+		out.WriteString(strings.Repeat("\t", printDepth))
 		out.WriteString("comparing same versions:\n")
 		for _, err := range sameVersionErrs {
 			if err != nil {
-				out.WriteString(strings.Repeat("\t", printDepth))
+				out.WriteString(strings.Repeat("\t", printDepth+1))
 				out.WriteString(err.Error())
 				out.WriteString("\n")
 			}
@@ -47,7 +48,7 @@ func (r *Result) Error(printDepth int) error {
 		out.WriteString("comparing served versions:\n")
 		for _, err := range servedVersionErrs {
 			if err != nil {
-				out.WriteString(strings.Repeat("\t", printDepth))
+				out.WriteString(strings.Repeat("\t", printDepth+1))
 				out.WriteString(err.Error())
 				out.WriteString("\n")
 			}
@@ -83,7 +84,7 @@ func (vcr *VersionCompareResult) Error(printDepth int) error {
 
 		for _, err := range propertyErrs {
 			if err != nil {
-				out.WriteString(strings.Repeat("\t", printDepth))
+				out.WriteString(strings.Repeat("\t", printDepth+1))
 				out.WriteString(err.Error())
 				out.WriteString("\n")
 			}
@@ -104,7 +105,7 @@ func (pcr *PropertyCompareResult) Error(printDepth int) error {
 		out.WriteString(fmt.Sprintf("comparing property %q:\n", pcr.Property))
 
 		for _, err := range pcr.Errors {
-			out.WriteString(strings.Repeat("\t", printDepth))
+			out.WriteString(strings.Repeat("\t", printDepth+1))
 			out.WriteString(err)
 			out.WriteString("\n")
 		}

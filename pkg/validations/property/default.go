@@ -82,7 +82,7 @@ func (d *Default) Name() string {
 	return "default"
 }
 
-func (d *Default) Validate(diff Diff) (bool, error) {
+func (d *Default) Validate(diff Diff) (Diff, bool, error) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -101,5 +101,6 @@ func (d *Default) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("default value changed from %q to %q", string(diff.Old().Default.Raw), string(diff.New().Default.Raw))
 	}
 
-	return IsHandled(diff, reset), err
+    resetDiff, handled := IsHandled(diff, reset) 
+	return resetDiff, handled, err
 }

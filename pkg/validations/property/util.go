@@ -6,7 +6,7 @@ import (
 
 type ResetFunc func(diff Diff) Diff
 
-func IsHandled(diff Diff, reset ResetFunc) bool {
+func IsHandled(diff Diff, reset ResetFunc) (Diff, bool) {
 	resetDiff := reset(diff)
-	return equality.Semantic.DeepEqual(resetDiff.Old(), resetDiff.New())
+	return resetDiff, equality.Semantic.DeepEqual(resetDiff.Old(), resetDiff.New())
 }

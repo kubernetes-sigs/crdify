@@ -67,7 +67,7 @@ func (e *Enum) Name() string {
 	return "enum"
 }
 
-func (e *Enum) Validate(diff Diff) (bool, error) {
+func (e *Enum) Validate(diff Diff) (Diff, bool, error) {
 	reset := func(diff Diff) Diff {
 		oldProperty := diff.Old()
 		newProperty := diff.New()
@@ -98,5 +98,6 @@ func (e *Enum) Validate(diff Diff) (bool, error) {
 		err = fmt.Errorf("enums %v added to the set of allowed values", addedEnums.UnsortedList())
 	}
 
-	return IsHandled(diff, reset), err
+    resetDiff, handled := IsHandled(diff, reset) 
+	return resetDiff, handled, err
 }

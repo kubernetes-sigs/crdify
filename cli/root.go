@@ -102,10 +102,7 @@ Example use cases:
 				case outputFormatPlainText:
 					var out strings.Builder
 					out.WriteString("comparing the CRDs identified incompatible changes\n\n")
-					out.WriteString("Incompatible Changes\n")
-					out.WriteString(strings.Repeat("-", 10) + "\n")
 					out.WriteString(err.Error())
-					out.WriteString(strings.Repeat("-", 10) + "\n")
 					log.Fatal(out.String())
 				case outputFormatJSON:
 					jsonOut, marshalError := result.JSON()
@@ -128,7 +125,7 @@ Example use cases:
 
 	rootCmd.AddCommand(NewVersionCommand())
 	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "the filepath to load the check configurations from")
-	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "plaintext", "the format the output should take when incompatibilities are identified. May be one of plaintext, json, yaml")
+	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "plaintext", "the format the output should take when incompatibilities are identified. May be one of plaintext, json, yaml")
 
 	return rootCmd
 }

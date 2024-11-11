@@ -68,50 +68,84 @@ var StrictPropertyCheckConfig = PropertyCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		NewEnforcement: property.RequiredValidationNewEnforcementStrict,
 	},
 	Type: TypeCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		ChangeEnforcement: property.TypeValidationChangeEnforcementStrict,
 	},
 	Maximum: MaxCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
+		},
+		MaxOptions: property.MaxOptions{
+			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
+			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
 		},
 	},
 	MaxItems: MaxCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		MaxOptions: property.MaxOptions{
+			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
+			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
+		},
 	},
 	MaxProperties: MaxCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
+		},
+		MaxOptions: property.MaxOptions{
+			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
+			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
 		},
 	},
 	MaxLength: MaxCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		MaxOptions: property.MaxOptions{
+			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
+			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
+		},
 	},
 	Minimum: MinCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
+		},
+		MinOptions: property.MinOptions{
+			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
+			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
 		},
 	},
 	MinItems: MinCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		MinOptions: property.MinOptions{
+			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
+			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
+		},
 	},
 	MinProperties: MinCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
+		MinOptions: property.MinOptions{
+			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
+			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
+		},
 	},
 	MinLength: MinCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
+		},
+		MinOptions: property.MinOptions{
+			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
+			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
 		},
 	},
 }
@@ -186,18 +220,22 @@ type DefaultCheckConfig struct {
 
 type RequiredCheckConfig struct {
 	CheckConfig
+	NewEnforcement property.RequiredValidationNewEnforcement `json:"newEnforcement"`
 }
 
 type TypeCheckConfig struct {
 	CheckConfig
+	ChangeEnforcement property.TypeValidationChangeEnforcement `json:"changeEnforcement"`
 }
 
 type MaxCheckConfig struct {
 	CheckConfig
+	property.MaxOptions
 }
 
 type MinCheckConfig struct {
 	CheckConfig
+	property.MinOptions
 }
 
 func ValidatorForConfig(cfg Config) *crd.Validator {
@@ -273,43 +311,63 @@ func PropertyValidationsForPropertyCheckConfig(cfg PropertyCheckConfig) []proper
 	}
 
 	if cfg.Required.Enabled {
-		validations = append(validations, &property.Required{})
+		validations = append(validations, &property.Required{
+			NewEnforcement: cfg.Required.NewEnforcement,
+		})
 	}
 
 	if cfg.Type.Enabled {
-		validations = append(validations, &property.Type{})
+		validations = append(validations, &property.Type{
+			ChangeEnforcement: cfg.Type.ChangeEnforcement,
+		})
 	}
 
 	if cfg.Maximum.Enabled {
-		validations = append(validations, &property.Maximum{})
+		validations = append(validations, &property.Maximum{
+			MaxOptions: cfg.Maximum.MaxOptions,
+		})
 	}
 
 	if cfg.MaxItems.Enabled {
-		validations = append(validations, &property.MaxItems{})
+		validations = append(validations, &property.MaxItems{
+			MaxOptions: cfg.MaxItems.MaxOptions,
+		})
 	}
 
 	if cfg.MaxLength.Enabled {
-		validations = append(validations, &property.MaxLength{})
+		validations = append(validations, &property.MaxLength{
+			MaxOptions: cfg.MaxLength.MaxOptions,
+		})
 	}
 
 	if cfg.MaxProperties.Enabled {
-		validations = append(validations, &property.MaxProperties{})
+		validations = append(validations, &property.MaxProperties{
+			MaxOptions: cfg.MaxProperties.MaxOptions,
+		})
 	}
 
 	if cfg.Minimum.Enabled {
-		validations = append(validations, &property.Minimum{})
+		validations = append(validations, &property.Minimum{
+			MinOptions: cfg.Minimum.MinOptions,
+		})
 	}
 
 	if cfg.MinItems.Enabled {
-		validations = append(validations, &property.MinItems{})
+		validations = append(validations, &property.MinItems{
+			MinOptions: cfg.MinItems.MinOptions,
+		})
 	}
 
 	if cfg.MinLength.Enabled {
-		validations = append(validations, &property.MinLength{})
+		validations = append(validations, &property.MinLength{
+			MinOptions: cfg.MinLength.MinOptions,
+		})
 	}
 
 	if cfg.MinProperties.Enabled {
-		validations = append(validations, &property.MinProperties{})
+		validations = append(validations, &property.MinProperties{
+			MinOptions: cfg.MinProperties.MinOptions,
+		})
 	}
 
 	return validations

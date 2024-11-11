@@ -43,6 +43,20 @@ func TestMaximum(t *testing.T) {
 			maximum: &Maximum{},
 		},
 		{
+			name:        "new maximum constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Maximum: ptr.To(10.0),
+			},
+			err:     nil,
+			handled: true,
+			maximum: &Maximum{
+				MaxOptions: MaxOptions{
+					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "maximum constraint decreased, error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(20.0),
@@ -53,6 +67,22 @@ func TestMaximum(t *testing.T) {
 			err:     errors.New("maximum: constraint decreased from 20 to 10"),
 			handled: true,
 			maximum: &Maximum{},
+		},
+		{
+			name: "maximum constraint decreased, decrease enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				Maximum: ptr.To(20.0),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Maximum: ptr.To(10.0),
+			},
+			err:     nil,
+			handled: true,
+			maximum: &Maximum{
+				MaxOptions{
+					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
+				},
+			},
 		},
 		{
 			name: "maximum constraint increased, no error, handled",
@@ -80,7 +110,7 @@ func TestMaximum(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maximum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.maximum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -121,6 +151,20 @@ func TestMaxItems(t *testing.T) {
 			maxItems: &MaxItems{},
 		},
 		{
+			name:        "new maxItems constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxItems: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			maxItems: &MaxItems{
+				MaxOptions: MaxOptions{
+					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "maxItems constraint decreased, error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				MaxItems: ptr.To(int64(20)),
@@ -131,6 +175,22 @@ func TestMaxItems(t *testing.T) {
 			err:      errors.New("maxItems: constraint decreased from 20 to 10"),
 			handled:  true,
 			maxItems: &MaxItems{},
+		},
+		{
+			name: "maxItems constraint decreased, decrease enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxItems: ptr.To(int64(20)),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxItems: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			maxItems: &MaxItems{
+				MaxOptions: MaxOptions{
+					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
+				},
+			},
 		},
 		{
 			name: "maxitems constraint increased, no error, handled",
@@ -158,7 +218,7 @@ func TestMaxItems(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maxItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.maxItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -199,6 +259,20 @@ func TestMaxLength(t *testing.T) {
 			maxLength: &MaxLength{},
 		},
 		{
+			name:        "new maxLength constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxLength: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			maxLength: &MaxLength{
+				MaxOptions: MaxOptions{
+					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "maxLength constraint decreased, error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				MaxLength: ptr.To(int64(20)),
@@ -209,6 +283,22 @@ func TestMaxLength(t *testing.T) {
 			err:       errors.New("maxLength: constraint decreased from 20 to 10"),
 			handled:   true,
 			maxLength: &MaxLength{},
+		},
+		{
+			name: "maxLength constraint decreased, decrease enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxLength: ptr.To(int64(20)),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxLength: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			maxLength: &MaxLength{
+				MaxOptions: MaxOptions{
+					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
+				},
+			},
 		},
 		{
 			name: "maxLength constraint increased, no error, handled",
@@ -236,7 +326,7 @@ func TestMaxLength(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maxLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.maxLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})
@@ -277,6 +367,20 @@ func TestMaxProperties(t *testing.T) {
 			maxProperties: &MaxProperties{},
 		},
 		{
+			name:        "new maxProperties constraint, addition enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxProperties: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			maxProperties: &MaxProperties{
+				MaxOptions: MaxOptions{
+					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
+				},
+			},
+		},
+		{
 			name: "maxProperties constraint decreased, error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				MaxProperties: ptr.To(int64(20)),
@@ -287,6 +391,22 @@ func TestMaxProperties(t *testing.T) {
 			err:           errors.New("maxProperties: constraint decreased from 20 to 10"),
 			handled:       true,
 			maxProperties: &MaxProperties{},
+		},
+		{
+			name: "maxProperties constraint decreased, decrease enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxProperties: ptr.To(int64(20)),
+			},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				MaxProperties: ptr.To(int64(10)),
+			},
+			err:     nil,
+			handled: true,
+			maxProperties: &MaxProperties{
+				MaxOptions: MaxOptions{
+					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
+				},
+			},
 		},
 		{
 			name: "maxProperties constraint increased, no error, handled",
@@ -314,7 +434,7 @@ func TestMaxProperties(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handled, err := tc.maxProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
+			_, handled, err := tc.maxProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.handled, handled)
 		})

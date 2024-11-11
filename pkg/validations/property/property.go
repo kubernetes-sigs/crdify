@@ -30,6 +30,6 @@ func (pd *diff) New() *apiextensionsv1.JSONSchemaProps {
 }
 
 type Validation interface {
-	Validate(Diff) (bool, error)
+	Validate(Diff) (Diff, bool, error)
 	Name() string
 }
