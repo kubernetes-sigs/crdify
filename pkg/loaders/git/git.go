@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 
+	"github.com/go-git/go-git/v5"
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -21,54 +22,57 @@ func NewGit() *Git {
 
 func (g *Git) Load(ctx context.Context, location url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
 	filePath := location.Query().Get("path")
-	// TODO: get only the specific file. Helpful link:
-	// https://stackoverflow.com/questions/73561564/how-to-checkout-a-specific-single-file-to-inspect-it-using-go-git
 	repo, err := gogit.PlainOpen("")
 	if err != nil {
 		return nil, fmt.Errorf("opening repository: %w", err)
 	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		return nil, fmt.Errorf("getting worktree: %w", err)
-	}
-
-	originalRef, err := repo.Head()
-	if err != nil {
-		return nil, fmt.Errorf("getting HEAD: %w", err)
-	}
-
-	defer func() {
-		if err := wt.Checkout(&gogit.CheckoutOptions{Hash: originalRef.Hash()}); err != nil {
-			fmt.Println("WARNING: failed to checkout your original working commit after loading:", err)
-		}
-	}()
 
 	rev := plumbing.Revision(location.Hostname())
 	hash, err := repo.ResolveRevision(rev)
 	if err != nil {
 		return nil, fmt.Errorf("calculating hash for revision %q: %w", rev, err)
 	}
-	err = wt.Checkout(&gogit.CheckoutOptions{Hash: *hash})
-	if err != nil {
-		return nil, fmt.Errorf("checking out hash %v: %w", hash, err)
-	}
 
-	file, err := wt.Filesystem.Open(filePath)
+	crd, err := LoadCRDFileFromRepositoryWithRef(repo, hash, filePath)
 	if err != nil {
-		return nil, fmt.Errorf("opening file %q in revision %q: %w", filePath, rev, err)
-	}
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("reading file %q: %w", filePath, err)
-	}
-
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	err = yaml.Unmarshal(fileBytes, crd)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling contents of file %q: %w", filePath, err)
+		return nil, fmt.Errorf("loading CRD: %w", err)
 	}
 
 	return crd, nil
+}
+
+func LoadCRDFileFromRepositoryWithRef(repo *git.Repository, ref *plumbing.Hash, filename string) (*apiextensionsv1.CustomResourceDefinition, error) {
+	commit, err := repo.CommitObject(*ref)
+	if err != nil {
+		return nil, fmt.Errorf("getting commit object from repo for ref %v: %w", ref, err)
+	}
+
+	tree, err := repo.TreeObject(commit.TreeHash)
+	if err != nil {
+		return nil, fmt.Errorf("getting tree object from repo for tree hash %v: %w", commit.TreeHash, err)
+	}
+
+	file, err := tree.File(filename)
+	if err != nil {
+		return nil, fmt.Errorf("getting file %q from repo for tree hash %v: %w", filename, commit.TreeHash, err)
+	}
+
+	reader, err := file.Reader()
+	if err != nil {
+		return nil, fmt.Errorf("getting reader for blob for file %q from repo with ref %v: %w", filename, commit.TreeHash, err)
+	}
+	defer reader.Close()
+
+	crdBytes, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("reading content of blob for file %q from repo with ref %v: %w", filename, commit.TreeHash, err)
+	}
+
+	loadedCRD := &apiextensionsv1.CustomResourceDefinition{}
+	err = yaml.Unmarshal(crdBytes, loadedCRD)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling content of blob for file %q from repo with ref %v: %w", filename, commit.TreeHash, err)
+	}
+
+	return loadedCRD, nil
 }
