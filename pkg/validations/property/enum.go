@@ -45,7 +45,7 @@ type Enum struct {
 	// when evaluating if the addition of an allowed enum value for a property
 	// is considered incompatible.
 	//
-	// Known enforcement strategies are "Strict", "NotPreviouslyConstrained", and "None".
+	// Known enforcement strategies are "Strict", "IfPreviouslyConstrained", and "None".
 	//
 	// When set to "Strict", addition of any new enum values for a property
 	// is considered incompatible, including when there were previously no enum constraints.
