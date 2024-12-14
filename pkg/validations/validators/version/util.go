@@ -53,6 +53,8 @@ func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProp
 		// create a diff entry with the new value being empty
 		if !ok {
 			diffMap[prop] = property.NewDiff(oldSchemaCopy, &apiextensionsv1.JSONSchemaProps{})
+			// Continue as there is no newSchema to copy and evaluate for this prop.
+			continue
 		}
 
 		// Do the same copy and unset logic for the new schema properties
