@@ -81,6 +81,11 @@ checks:
         changeEnforcement: Strict
         removalEnforcement: Strict
         additionEnforcement: Strict
+      description:
+        enabled: true
+        changeEnforcement: Strict
+        removalEnforcement: Strict
+        additionEnforcement: Strict
       required:
         enabled: true
         newEnforcement: Strict
