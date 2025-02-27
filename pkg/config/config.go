@@ -68,7 +68,8 @@ var StrictPropertyCheckConfig = PropertyCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
-		NewEnforcement: property.RequiredValidationNewEnforcementStrict,
+		NewEnforcement:     property.RequiredValidationNewEnforcementStrict,
+		RemovalEnforcement: property.RequiredValidationRemovalEnforcementStrict,
 	},
 	Type: TypeCheckConfig{
 		CheckConfig: CheckConfig{
@@ -220,7 +221,8 @@ type DefaultCheckConfig struct {
 
 type RequiredCheckConfig struct {
 	CheckConfig
-	NewEnforcement property.RequiredValidationNewEnforcement `json:"newEnforcement"`
+	NewEnforcement     property.RequiredValidationNewEnforcement `json:"newEnforcement"`
+	RemovalEnforcement property.RequiredValidationNewEnforcement `json:"removalEnforcement"`
 }
 
 type TypeCheckConfig struct {

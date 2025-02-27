@@ -28,6 +28,7 @@ checks:
       required:
         enabled: true
         newEnforcement: Strict
+        removalEnforcement: Strict
       type:
         enabled: true
         changeEnforcement: Strict
@@ -79,6 +80,7 @@ checks:
       required:
         enabled: true
         newEnforcement: Strict
+        removalEnforcement: Strict
       type:
         enabled: true
         changeEnforcement: Strict

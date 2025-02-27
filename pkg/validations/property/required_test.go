@@ -62,6 +62,40 @@ func TestRequired(t *testing.T) {
 			},
 		},
 		{
+			name: "required field removed, error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				Required: []string{
+					"foo", "bar",
+				}},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Required: []string{
+					"foo",
+				},
+			},
+			err:     errors.New("required fields [bar] removed"),
+			handled: true,
+			required: &Required{
+				NewEnforcement: RequiredValidationRemovalEnforcementStrict,
+			},
+		},
+		{
+			name: "required field removed, removal enforcement set to None, no error, handled",
+			oldProperty: &apiextensionsv1.JSONSchemaProps{
+				Required: []string{
+					"foo", "bar",
+				}},
+			newProperty: &apiextensionsv1.JSONSchemaProps{
+				Required: []string{
+					"foo",
+				},
+			},
+			err:     nil,
+			handled: true,
+			required: &Required{
+				NewEnforcement: RequiredValidationNewEnforcementNone,
+			},
+		},
+		{
 			name: "different field changed, no error, not handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
