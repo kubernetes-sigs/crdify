@@ -254,21 +254,8 @@ checks:
 ### Description
 
 Validates compatibility of changes to a property's description. Changes to descriptions
-of properties can lead to misunderstandings or incorrect usage of the custom resource,
-especially if users rely on the description for guidance.
-
-Incompatible changes are generally:
-
-- Removing the description
-- Changing the description
-- Adding a description when one did not exist previously
-
-In a configuration file, this validation can be configured to:
-
-- Be enabled/disabled
-- Prevent changes to the description
-- Prevent the removal of the description
-- Prevent the addition of a description when one did not previously exist
+of properties are generally an acceptable change. If enabled, the validator allows all changes
+to the description of a property.
 
 Example configuration for this validation:
 
@@ -281,51 +268,6 @@ checks:
     sameVersion:
       description:
         enabled: { true || false }
-        # changeEnforcement is the enforcement strategy that should be used
-        # when evaluating if a change to the description of a property
-        # is considered incompatible.
-        #
-        # Known enforcement strategies are "Strict" and "None".
-        #
-        # When set to "Strict", any changes to the description of a property
-        # is considered incompatible.
-        #
-        # When set to "None", changes to the description of a property are
-        # not considered incompatible.
-        #
-        # If set to an unknown value, the "Strict" enforcement strategy
-        # will be used.
-        changeEnforcement: { Strict || None }
-        # removalEnforcement is the enforcement strategy that should be used
-        # when evaluating if the removal of the description of a property
-        # is considered incompatible.
-        #
-        # Known enforcement strategies are "Strict" and "None".
-        #
-        # When set to "Strict", removal of the description of a property
-        # is considered incompatible.
-        #
-        # When set to "None", removal of the description of a property is
-        # not considered incompatible.
-        #
-        # If set to an unknown value, the "Strict" enforcement strategy
-        # will be used.
-        removalEnforcement: { Strict || None }
-        # additionEnforcement is the enforcement strategy that should be used
-        # when evaluating if the addition of a description for a property
-        # is considered incompatible.
-        #
-        # Known enforcement strategies are "Strict" and "None".
-        #
-        # When set to "Strict", addition of a description for a property
-        # is considered incompatible.
-        #
-        # When set to "None", addition of a description for a property is
-        # not considered incompatible.
-        #
-        # If set to an unknown value, the "Strict" enforcement strategy
-        # will be used.
-        additionEnforcement: { Strict || None }
 ```
 
 ### Maximum, MaxLength, MaxItems, and MaxProperties

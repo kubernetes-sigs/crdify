@@ -1,7 +1,6 @@
 package property
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,74 +39,36 @@ func TestDescription(t *testing.T) {
 			description: &Description{},
 		},
 		{
-			name:        "new description, error, handled",
+			name:        "new description, no error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{},
 			newProperty: &apiextensionsv1.JSONSchemaProps{
 				Description: "new foo",
 			},
-			err:         errors.New("description \"new foo\" added when there was no description previously"),
+			err:         nil,
 			handled:     true,
 			description: &Description{},
 		},
 		{
-			name:        "new description, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				Description: "new foo",
-			},
-			err:     nil,
-			handled: true,
-			description: &Description{
-				AdditionEnforcement: DescriptionValidationAdditionEnforcementNone,
-			},
-		},
-		{
-			name: "description removed, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				Description: "old foo",
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{},
-			err:         errors.New("description \"old foo\" removed"),
-			handled:     true,
-			description: &Description{},
-		},
-		{
-			name: "description removed, removal enforcement set to None, no error, handled",
+			name: "description removed, no error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				Description: "old foo",
 			},
 			newProperty: &apiextensionsv1.JSONSchemaProps{},
 			err:         nil,
 			handled:     true,
-			description: &Description{
-				RemovalEnforcement: DescriptionValidationRemovalEnforcementNone,
-			},
-		},
-		{
-			name: "description changed, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				Description: "old foo",
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				Description: "new foo",
-			},
-			err:         errors.New("description changed from \"old foo\" to \"new foo\""),
-			handled:     true,
 			description: &Description{},
 		},
 		{
-			name: "description changed, change enforcement set to None, no error, handled",
+			name: "description changed, no error, handled",
 			oldProperty: &apiextensionsv1.JSONSchemaProps{
 				Description: "old foo",
 			},
 			newProperty: &apiextensionsv1.JSONSchemaProps{
 				Description: "new foo",
 			},
-			err:     nil,
-			handled: true,
-			description: &Description{
-				ChangeEnforcement: DescriptionValidationChangeEnforcementNone,
-			},
+			err:         nil,
+			handled:     true,
+			description: &Description{},
 		},
 		{
 			name: "different field changed, no error, not handled",

@@ -68,9 +68,6 @@ var StrictPropertyCheckConfig = PropertyCheckConfig{
 		CheckConfig: CheckConfig{
 			Enabled: true,
 		},
-		ChangeEnforcement:   property.DescriptionValidationChangeEnforcementStrict,
-		RemovalEnforcement:  property.DescriptionValidationRemovalEnforcementStrict,
-		AdditionEnforcement: property.DescriptionValidationAdditionEnforcementStrict,
 	},
 	Required: RequiredCheckConfig{
 		CheckConfig: CheckConfig{
@@ -229,9 +226,6 @@ type DefaultCheckConfig struct {
 
 type DescriptionCheckConfig struct {
 	CheckConfig
-	ChangeEnforcement   property.DescriptionValidationChangeEnforcement   `json:"changeEnforcement"`
-	RemovalEnforcement  property.DescriptionValidationRemovalEnforcement  `json:"removalEnforcement"`
-	AdditionEnforcement property.DescriptionValidationAdditionEnforcement `json:"additionEnforcement"`
 }
 
 type RequiredCheckConfig struct {
@@ -327,11 +321,7 @@ func PropertyValidationsForPropertyCheckConfig(cfg PropertyCheckConfig) []proper
 	}
 
 	if cfg.Description.Enabled {
-		validations = append(validations, &property.Description{
-			ChangeEnforcement:   cfg.Description.ChangeEnforcement,
-			RemovalEnforcement:  cfg.Description.RemovalEnforcement,
-			AdditionEnforcement: cfg.Description.AdditionEnforcement,
-		})
+		validations = append(validations, &property.Description{})
 	}
 
 	if cfg.Required.Enabled {
