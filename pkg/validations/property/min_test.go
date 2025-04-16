@@ -1,442 +1,249 @@
 package property
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	internaltesting "github.com/everettraven/crd-diff/pkg/validations/internal/testing"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/utils/ptr"
 )
 
 func TestMinimum(t *testing.T) {
-	type testcase struct {
-		name        string
-		oldProperty *apiextensionsv1.JSONSchemaProps
-		newProperty *apiextensionsv1.JSONSchemaProps
-		err         error
-		handled     bool
-		minimum     *Minimum
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(10.0),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(10.0),
 			},
-			err:     nil,
-			handled: true,
-			minimum: &Minimum{},
+			Flagged:              false,
+			ComparableValidation: &Minimum{},
 		},
 		{
-			name:        "new minimum constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new minimum constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(10.0),
 			},
-			err:     errors.New("minimum: constraint 10 added when there were no restrictions previously"),
-			handled: true,
-			minimum: &Minimum{},
+			Flagged:              true,
+			ComparableValidation: &Minimum{},
 		},
 		{
-			name:        "new minimum constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				Minimum: ptr.To(10.0),
-			},
-			err:     nil,
-			handled: true,
-			minimum: &Minimum{
-				MinOptions: MinOptions{
-					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "minimum constraint decreased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "minimum constraint decreased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(20.0),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(10.0),
 			},
-			err:     nil,
-			handled: true,
-			minimum: &Minimum{},
+			Flagged:              false,
+			ComparableValidation: &Minimum{},
 		},
 		{
-			name: "minimum constraint increased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "minimum constraint increased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(10.0),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				Minimum: ptr.To(20.0),
 			},
-			err:     errors.New("minimum: constraint increased from 10 to 20"),
-			handled: true,
-			minimum: &Minimum{},
+			Flagged:              true,
+			ComparableValidation: &Minimum{},
 		},
 		{
-			name: "minimum constraint increased, increase enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				Minimum: ptr.To(10.0),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				Minimum: ptr.To(20.0),
-			},
-			err:     nil,
-			handled: true,
-			minimum: &Minimum{
-				MinOptions: MinOptions{
-					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:     nil,
-			handled: false,
-			minimum: &Minimum{},
+			Flagged:              false,
+			ComparableValidation: &Minimum{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.minimum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
-	}
-}
-
-func TestMinLength(t *testing.T) {
-	type testcase struct {
-		name        string
-		oldProperty *apiextensionsv1.JSONSchemaProps
-		newProperty *apiextensionsv1.JSONSchemaProps
-		err         error
-		handled     bool
-		minLength   *MinLength
 	}
 
-	for _, tc := range []testcase{
-		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(10)),
-			},
-			err:       nil,
-			handled:   true,
-			minLength: &MinLength{},
-		},
-		{
-			name:        "new minLength constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(10)),
-			},
-			err:       errors.New("minLength: constraint 10 added when there were no restrictions previously"),
-			handled:   true,
-			minLength: &MinLength{},
-		},
-		{
-			name:        "new minLength constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(10)),
-			},
-			err:     nil,
-			handled: true,
-			minLength: &MinLength{
-				MinOptions: MinOptions{
-					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "minLength constraint decreased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(20)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(10)),
-			},
-			err:       nil,
-			handled:   true,
-			minLength: &MinLength{},
-		},
-		{
-			name: "minLength constraint increased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(20)),
-			},
-			err:       errors.New("minLength: constraint increased from 10 to 20"),
-			handled:   true,
-			minLength: &MinLength{},
-		},
-		{
-			name: "minLength constraint increased, increase enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinLength: ptr.To(int64(20)),
-			},
-			err:     nil,
-			handled: true,
-			minLength: &MinLength{
-				MinOptions: MinOptions{
-					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				ID: "foo",
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				ID: "bar",
-			},
-			err:       nil,
-			handled:   false,
-			minLength: &MinLength{},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.minLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
-	}
+	internaltesting.RunTestcases(t, testcases...)
 }
 
 func TestMinItems(t *testing.T) {
-	type testcase struct {
-		name        string
-		oldProperty *apiextensionsv1.JSONSchemaProps
-		newProperty *apiextensionsv1.JSONSchemaProps
-		err         error
-		handled     bool
-		minItems    *MinItems
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(10)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(10)),
 			},
-			err:      nil,
-			handled:  true,
-			minItems: &MinItems{},
+			Flagged:              false,
+			ComparableValidation: &MinItems{},
 		},
 		{
-			name:        "new minItems constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new minItems constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(10)),
 			},
-			err:      errors.New("minItems: constraint 10 added when there were no restrictions previously"),
-			handled:  true,
-			minItems: &MinItems{},
+			Flagged:              true,
+			ComparableValidation: &MinItems{},
 		},
 		{
-			name:        "new minItems constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinItems: ptr.To(int64(10)),
-			},
-			err:     nil,
-			handled: true,
-			minItems: &MinItems{
-				MinOptions: MinOptions{
-					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "minItems constraint decreased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "minItems constraint decreased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(10)),
 			},
-			err:      nil,
-			handled:  true,
-			minItems: &MinItems{},
+			Flagged:              false,
+			ComparableValidation: &MinItems{},
 		},
 		{
-			name: "minItems constraint increased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "minItems constraint increased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(10)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinItems: ptr.To(int64(20)),
 			},
-			err:      errors.New("minItems: constraint increased from 10 to 20"),
-			handled:  true,
-			minItems: &MinItems{},
+			Flagged:              true,
+			ComparableValidation: &MinItems{},
 		},
 		{
-			name: "minItems constraint increased, increase enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MinItems: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinItems: ptr.To(int64(20)),
-			},
-			err:     nil,
-			handled: true,
-			minItems: &MinItems{
-				MinOptions: MinOptions{
-					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:      nil,
-			handled:  false,
-			minItems: &MinItems{},
+			Flagged:              false,
+			ComparableValidation: &MinItems{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.minItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
 	}
+
+	internaltesting.RunTestcases(t, testcases...)
+}
+
+func TestMinLength(t *testing.T) {
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
+		{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(10)),
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(10)),
+			},
+			Flagged:              false,
+			ComparableValidation: &MinLength{},
+		},
+		{
+			Name: "new minLength constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(10)),
+			},
+			Flagged:              true,
+			ComparableValidation: &MinLength{},
+		},
+		{
+			Name: "minLength constraint decreased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(20)),
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(10)),
+			},
+			Flagged:              false,
+			ComparableValidation: &MinLength{},
+		},
+		{
+			Name: "minLength constraint increased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(10)),
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				MinLength: ptr.To(int64(20)),
+			},
+			Flagged:              true,
+			ComparableValidation: &MinLength{},
+		},
+		{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				ID: "foo",
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				ID: "bar",
+			},
+			Flagged:              false,
+			ComparableValidation: &MinLength{},
+		},
+	}
+
+	internaltesting.RunTestcases(t, testcases...)
 }
 
 func TestMinProperties(t *testing.T) {
-	type testcase struct {
-		name          string
-		oldProperty   *apiextensionsv1.JSONSchemaProps
-		newProperty   *apiextensionsv1.JSONSchemaProps
-		err           error
-		handled       bool
-		minProperties *MinProperties
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(10)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(10)),
 			},
-			err:           nil,
-			handled:       true,
-			minProperties: &MinProperties{},
+			Flagged:              false,
+			ComparableValidation: &MinProperties{},
 		},
 		{
-			name:        "new minProperties constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new minProperties constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(10)),
 			},
-			err:           errors.New("minProperties: constraint 10 added when there were no restrictions previously"),
-			handled:       true,
-			minProperties: &MinProperties{},
+			Flagged:              true,
+			ComparableValidation: &MinProperties{},
 		},
 		{
-			name:        "new minProperties constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinProperties: ptr.To(int64(10)),
-			},
-			err:     nil,
-			handled: true,
-			minProperties: &MinProperties{
-				MinOptions: MinOptions{
-					AdditionEnforcement: MinVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "minProperties constraint decreased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "minProperties constraint decreased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(10)),
 			},
-			err:           nil,
-			handled:       true,
-			minProperties: &MinProperties{},
+			Flagged:              false,
+			ComparableValidation: &MinProperties{},
 		},
 		{
-			name: "minProperties constraint increased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "minProperties constraint increased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(10)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MinProperties: ptr.To(int64(20)),
 			},
-			err:           errors.New("minProperties: constraint increased from 10 to 20"),
-			handled:       true,
-			minProperties: &MinProperties{},
+			Flagged:              true,
+			ComparableValidation: &MinProperties{},
 		},
 		{
-			name: "minProperties constraint increased, increase enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MinProperties: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MinProperties: ptr.To(int64(20)),
-			},
-			err:     nil,
-			handled: true,
-			minProperties: &MinProperties{
-				MinOptions: MinOptions{
-					IncreaseEnforcement: MinVerificationIncreaseEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:           nil,
-			handled:       false,
-			minProperties: &MinProperties{},
+			Flagged:              false,
+			ComparableValidation: &MinProperties{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.minProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
 	}
+
+	internaltesting.RunTestcases(t, testcases...)
 }

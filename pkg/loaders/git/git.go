@@ -6,21 +6,26 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/go-git/go-git/v5"
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-// TODO: Support remote git references
+// Git is a Loader implementation for loading a CustomResourceDefinition
+// from a git repository.
 type Git struct{}
 
-func NewGit() *Git {
+// New returns a new instance of the Git Loader
+func New() *Git {
 	return &Git{}
 }
 
-func (g *Git) Load(ctx context.Context, location url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
+// Load loads the CustomResourceDefinition from the git revision and file path specified in the URL.
+// It reads a query key named 'path' for the file path and uses the hostname for the revision.
+// For example, 'git://main?path=foo/bar/file.yaml' would source the CustomResourceDefinition from the
+// main branch of the git repository using the file 'foo/bar/file.yaml'.
+func (g *Git) Load(_ context.Context, location *url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
 	filePath := location.Query().Get("path")
 	repo, err := gogit.PlainOpen("")
 	if err != nil {
@@ -41,7 +46,9 @@ func (g *Git) Load(ctx context.Context, location url.URL) (*apiextensionsv1.Cust
 	return crd, nil
 }
 
-func LoadCRDFileFromRepositoryWithRef(repo *git.Repository, ref *plumbing.Hash, filename string) (*apiextensionsv1.CustomResourceDefinition, error) {
+// LoadCRDFileFromRepositoryWithRef loads a CustomResourceDefinition from the provided
+// git.Repository using the provided git ref and file name.
+func LoadCRDFileFromRepositoryWithRef(repo *gogit.Repository, ref *plumbing.Hash, filename string) (*apiextensionsv1.CustomResourceDefinition, error) {
 	commit, err := repo.CommitObject(*ref)
 	if err != nil {
 		return nil, fmt.Errorf("getting commit object from repo for ref %v: %w", ref, err)

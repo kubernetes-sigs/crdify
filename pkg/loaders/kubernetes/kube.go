@@ -10,17 +10,35 @@ import (
 	apiextensionsv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"k8s.io/client-go/rest"
 )
 
-type Kubernetes struct{}
+// KubeConfigFunc is a function with no input parameters that returns a rest.Config
+// for building a client to interact with a Kubernetes cluster or an error
+type KubeConfigFunc func() (*rest.Config, error)
 
-func NewKubernetes() *Kubernetes {
-	return &Kubernetes{}
+// Kubernetes is a Loader implementation for sourcing a CustomResourceDefinition from a Kubernetes cluster
+type Kubernetes struct {
+	// cfgFunc is a function to source the rest.Config for building
+	// a client for fetching a CustomResourceDefinition from a Kubernetes cluster.
+	// We use a function here so that a configuration for interacting with a Kubernetes cluster
+	// is only run when this loader has been intentionally called.
+	cfgFunc KubeConfigFunc
 }
 
-func (k *Kubernetes) Load(ctx context.Context, location url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
-	cfg, err := config.GetConfig()
+// New returns a new instance of a Kubernetes Loader, configured with
+// the provided function for loading a Kubeconfig for interacting with a
+// Kubernetes cluster
+func New(cfgFunc KubeConfigFunc) *Kubernetes {
+	return &Kubernetes{
+		cfgFunc: cfgFunc,
+	}
+}
+
+// Load loads a CustomResourceDefinition from a Kubernetes cluster using the same configurations as tools like
+// kubectl. It uses the hostname of the provided URL as the name of the CustomResourceDefinition to fetch from the cluster
+func (k *Kubernetes) Load(ctx context.Context, location *url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
+	cfg, err := k.cfgFunc()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
 	}

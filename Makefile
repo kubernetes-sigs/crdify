@@ -16,3 +16,23 @@ unit:
 .PHONY: build
 build:
 	go build -o bin/crd-diff main.go
+
+.PHONY: fmt
+fmt:
+	go fmt ./...
+
+.PHONY: verify
+verify: fmt tidy lint
+	git diff --exit-code
+
+.PHONY: tidy
+tidy:
+	go mod tidy
+
+.PHONY: e2e
+e2e: build
+	go run ./test/suite.go
+
+.PHONY: update-e2e
+update-e2e: build
+	go run ./test/suite.go --update

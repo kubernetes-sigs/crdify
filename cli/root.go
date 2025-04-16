@@ -2,11 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"net/url"
 	"os"
-	"strings"
 
 	"github.com/everettraven/crd-diff/pkg/config"
 	"github.com/everettraven/crd-diff/pkg/loaders/composite"
@@ -14,26 +11,23 @@ import (
 	"github.com/everettraven/crd-diff/pkg/loaders/git"
 	"github.com/everettraven/crd-diff/pkg/loaders/kubernetes"
 	"github.com/everettraven/crd-diff/pkg/loaders/scheme"
+	"github.com/everettraven/crd-diff/pkg/runner"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	crconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func NewRootCommand() *cobra.Command {
 	loader := composite.NewComposite(
-		composite.WithLoaders(map[string]composite.Loader{
-			scheme.SchemeKubernetes: kubernetes.NewKubernetes(),
-			scheme.SchemeFile:       file.NewFile(afero.OsFs{}),
-			scheme.SchemeGit:        git.NewGit(),
-		}),
+		map[string]composite.Loader{
+			scheme.SchemeKubernetes: kubernetes.New(crconfig.GetConfig),
+			scheme.SchemeFile:       file.New(afero.OsFs{}),
+			scheme.SchemeGit:        git.New(),
+		},
 	)
 
 	var configFile string
 	var outputFormat string
-
-	const outputFormatJSON = "json"
-	const outputFormatYAML = "yaml"
-	const outputFormatPlainText = "plaintext"
 
 	rootCmd := &cobra.Command{
 		Use:   "crd-diff <old> <new>",
@@ -53,79 +47,44 @@ Example use cases:
             $ crd-diff git://{ref}?path={filepath} git://{ref}?path={filepath}`,
 		Args: cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
-			oldURL, err := url.Parse(args[0])
+			cfg, err := config.Load(configFile)
 			if err != nil {
-				log.Fatalf("parsing old source: %v", err)
+				log.Fatalf("loading config: %v", err)
 			}
 
-			newURL, err := url.Parse(args[1])
+			run, err := runner.New(cfg, runner.DefaultRegistry())
 			if err != nil {
-				log.Fatalf("parsing new source: %v", err)
+				log.Fatalf("configuring validation runner: %v", err)
 			}
 
-			oldCrd, err := loader.Load(cmd.Context(), *oldURL)
+			oldCrd, err := loader.Load(cmd.Context(), args[0])
 			if err != nil {
 				log.Fatalf("loading old CustomResourceDefinition: %v", err)
 			}
 
-			newCrd, err := loader.Load(cmd.Context(), *newURL)
+			newCrd, err := loader.Load(cmd.Context(), args[1])
 			if err != nil {
 				log.Fatalf("loading new CustomResourceDefinition: %v", err)
 			}
 
-			cfg := &config.StrictConfig
+			results := run.Run(oldCrd, newCrd)
 
-			if configFile != "" {
-				file, err := os.Open(configFile)
-				if err != nil {
-					log.Fatalf("loading config file %q: %v", configFile, err)
-				}
-
-				configBytes, err := io.ReadAll(file)
-				if err != nil {
-					log.Fatalf("reading config file %q: %v", configFile, err)
-				}
-				file.Close()
-
-				err = yaml.Unmarshal(configBytes, cfg)
-				if err != nil {
-					log.Fatalf("unmarshalling config file %q contents: %v", configFile, err)
-				}
+			report, err := results.Render(runner.Format(outputFormat))
+			if err != nil {
+				// TODO: can we handle this better than spitting out an obtuse error?
+				log.Fatalf("rendering run results: %v", err)
 			}
 
-			validator := config.ValidatorForConfig(*cfg)
-
-			result := validator.Validate(oldCrd, newCrd)
-			err = result.Error(0)
-			if err != nil {
-				switch outputFormat {
-				case outputFormatPlainText:
-					var out strings.Builder
-					out.WriteString("comparing the CRDs identified incompatible changes\n\n")
-					out.WriteString(err.Error())
-					log.Fatal(out.String())
-				case outputFormatJSON:
-					jsonOut, marshalError := result.JSON()
-					if marshalError != nil {
-						log.Fatalf("marshalling results to JSON: %v", marshalError)
-					}
-					fmt.Print(string(jsonOut))
-					os.Exit(1)
-				case outputFormatYAML:
-					yamlOut, marshalError := result.YAML()
-					if marshalError != nil {
-						log.Fatalf("marshalling results to YAML: %v", marshalError)
-					}
-					fmt.Print(string(yamlOut))
-					os.Exit(1)
-				}
+			fmt.Print(report)
+			if results.HasFailures() {
+				os.Exit(1)
 			}
 		},
 	}
 
 	rootCmd.AddCommand(NewVersionCommand())
 	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "the filepath to load the check configurations from")
-	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "plaintext", "the format the output should take when incompatibilities are identified. May be one of plaintext, json, yaml")
+	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "plaintext", "the format the output should take when incompatibilities are identified. May be one of plaintext, markdown, json, yaml")
 
 	return rootCmd
 }

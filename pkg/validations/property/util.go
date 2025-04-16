@@ -1,12 +1,20 @@
 package property
 
 import (
-	"k8s.io/apimachinery/pkg/api/equality"
+	"encoding/json"
+	"fmt"
 )
 
-type ResetFunc func(diff Diff) Diff
+func ConfigToType[T any](in map[string]interface{}, out *T) error {
+	jsonBytes, err := json.Marshal(in)
+	if err != nil {
+		return fmt.Errorf("marshalling input to JSON: %w", err)
+	}
 
-func IsHandled(diff Diff, reset ResetFunc) (Diff, bool) {
-	resetDiff := reset(diff)
-	return resetDiff, equality.Semantic.DeepEqual(resetDiff.Old(), resetDiff.New())
+	err = json.Unmarshal(jsonBytes, out)
+	if err != nil {
+		return fmt.Errorf("unmarshalling input to output: %w", err)
+	}
+
+	return nil
 }

@@ -3,104 +3,69 @@ package property
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/everettraven/crd-diff/pkg/config"
+	"github.com/everettraven/crd-diff/pkg/validations"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-type DefaultValidationChangeEnforcement string
+const defaultValidationName = "default"
 
-const (
-	DefaultValidationChangeEnforcementStrict = "Strict"
-	DefaultValidationChangeEnforcementNone   = "None"
+var (
+	_ validations.Validation                                  = (*Default)(nil)
+	_ validations.Comparator[apiextensionsv1.JSONSchemaProps] = (*Default)(nil)
 )
 
-type DefaultValidationRemovalEnforcement string
+// RegisterDefault registers the Default validation
+// with the provided validation registry
+func RegisterDefault(registry validations.Registry) {
+	registry.Register(defaultValidationName, defaultFactory)
+}
 
-const (
-	DefaultValidationRemovalEnforcementStrict = "Strict"
-	DefaultValidationRemovalEnforcementNone   = "None"
-)
-
-type DefaultValidationAdditionEnforcement string
-
-const (
-	DefaultValidationAdditionEnforcementStrict = "Strict"
-	DefaultValidationAdditionEnforcementNone   = "None"
-)
+// defaultFactory is a function used to initialize a Default validation
+// implementation based on the provided configuration.
+func defaultFactory(_ map[string]interface{}) (validations.Validation, error) {
+	return &Default{}, nil
+}
 
 // Default is a Validation that can be used to identify
 // incompatible changes to the default value of CRD properties
 type Default struct {
-	// ChangeEnforcement is the enforcement strategy that should be used
-	// when evaluating if a change to the default value of a property
-	// is considered incompatible.
-	//
-	// Known enforcement strategies are "Strict" and "None".
-	//
-	// When set to "Strict", any changes to the default value of a property
-	// is considered incompatible.
-	//
-	// When set to "None", changes to the default value of a property are
-	// not considered incompatible.
-	//
-	// If set to an unknown value, the "Strict" enforcement strategy
-	// will be used.
-	ChangeEnforcement DefaultValidationChangeEnforcement
-
-	// RemovalEnforcement is the enforcement strategy that should be used
-	// when evaluating if the removal of the default value of a property
-	// is considered incompatible.
-	//
-	// Known enforcement strategies are "Strict" and "None".
-	//
-	// When set to "Strict", removal of the default value of a property
-	// is considered incompatible.
-	//
-	// When set to "None", removal of the default value of a property is
-	// not considered incompatible.
-	//
-	// If set to an unknown value, the "Strict" enforcement strategy
-	// will be used.
-	RemovalEnforcement DefaultValidationRemovalEnforcement
-
-	// AdditionEnforcement is the enforcement strategy that should be used
-	// when evaluating if the addition of a default value for a property
-	// is considered incompatible.
-	//
-	// Known enforcement strategies are "Strict" and "None".
-	//
-	// When set to "Strict", addition of a default value for a property
-	// is considered incompatible.
-	//
-	// When set to "None", addition of a default value for a property is
-	// not considered incompatible.
-	//
-	// If set to an unknown value, the "Strict" enforcement strategy
-	// will be used.
-	AdditionEnforcement DefaultValidationAdditionEnforcement
+	// enforcement is the EnforcementPolicy that this validation
+	// should use when performing its validation logic
+	enforcement config.EnforcementPolicy
 }
 
+// Name returns the name of the Default validation
 func (d *Default) Name() string {
-	return "default"
+	return defaultValidationName
 }
 
-func (d *Default) Validate(diff Diff) (Diff, bool, error) {
-	reset := func(diff Diff) Diff {
-		oldProperty := diff.Old()
-		newProperty := diff.New()
-		oldProperty.Default = nil
-		newProperty.Default = nil
-		return NewDiff(oldProperty, newProperty)
-	}
+// SetEnforcement sets the EnforcementPolicy for the Default validation
+func (d *Default) SetEnforcement(policy config.EnforcementPolicy) {
+	d.enforcement = policy
+}
+
+// Compare compares an old and a new JSONSchemaProps, checking for changes to the default value of a property.
+// In order for callers to determine if diffs to a JSONSchemaProps have been handled by this validation
+// the JSONSchemaProps.Default field will be reset to 'nil' as part of this method.
+// It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
+// to prevent unintentional modifications.
+func (d *Default) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
 	var err error
 
 	switch {
-	case diff.Old().Default == nil && diff.New().Default != nil && d.AdditionEnforcement != DefaultValidationAdditionEnforcementNone:
-		err = fmt.Errorf("default value %q added when there was no default previously", string(diff.New().Default.Raw))
-	case diff.Old().Default != nil && diff.New().Default == nil && d.RemovalEnforcement != DefaultValidationRemovalEnforcementNone:
-		err = fmt.Errorf("default value %q removed", string(diff.Old().Default.Raw))
-	case diff.Old().Default != nil && diff.New().Default != nil && !bytes.Equal(diff.Old().Default.Raw, diff.New().Default.Raw) && d.ChangeEnforcement != DefaultValidationChangeEnforcementNone:
-		err = fmt.Errorf("default value changed from %q to %q", string(diff.Old().Default.Raw), string(diff.New().Default.Raw))
+	case a.Default == nil && b.Default != nil:
+		err = fmt.Errorf("default value %q added when there was no default previously", string(b.Default.Raw))
+	case a.Default != nil && b.Default == nil:
+		err = fmt.Errorf("default value %q removed", string(a.Default.Raw))
+	case a.Default != nil && b.Default != nil && !bytes.Equal(a.Default.Raw, b.Default.Raw):
+		err = fmt.Errorf("default value changed from %q to %q", string(a.Default.Raw), string(b.Default.Raw))
 	}
 
-    resetDiff, handled := IsHandled(diff, reset) 
-	return resetDiff, handled, err
+	// reset values
+	a.Default = nil
+	b.Default = nil
+
+	return validations.HandleErrors(d.Name(), d.enforcement, err)
 }

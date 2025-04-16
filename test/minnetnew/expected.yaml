@@ -1,0 +1,177 @@
+crdvalidation:
+- name: storedVersionRemoval
+  errors: []
+  warnings: []
+- name: scope
+  errors: []
+  warnings: []
+- name: existingFieldRemoval
+  errors: []
+  warnings: []
+sameversionvalidation:
+  v1alpha1:
+    ^.spec.config:
+    - name: type
+      errors: []
+      warnings: []
+    - name: minLength
+      errors: []
+      warnings: []
+    - name: required
+      errors: []
+      warnings: []
+    - name: maximum
+      errors: []
+      warnings: []
+    - name: maxLength
+      errors: []
+      warnings: []
+    - name: minItems
+      errors: []
+      warnings: []
+    - name: default
+      errors: []
+      warnings: []
+    - name: maxItems
+      errors: []
+      warnings: []
+    - name: minProperties
+      errors:
+      - constraint 2 added when there were no restrictions previously
+      warnings: []
+    - name: enum
+      errors: []
+      warnings: []
+    - name: minimum
+      errors: []
+      warnings: []
+    - name: maxProperties
+      errors: []
+      warnings: []
+    - name: unhandled
+      errors: []
+      warnings: []
+    ^.spec.containerPorts:
+    - name: type
+      errors: []
+      warnings: []
+    - name: minLength
+      errors: []
+      warnings: []
+    - name: required
+      errors: []
+      warnings: []
+    - name: maximum
+      errors: []
+      warnings: []
+    - name: maxLength
+      errors: []
+      warnings: []
+    - name: minItems
+      errors:
+      - constraint 2 added when there were no restrictions previously
+      warnings: []
+    - name: default
+      errors: []
+      warnings: []
+    - name: maxItems
+      errors: []
+      warnings: []
+    - name: minProperties
+      errors: []
+      warnings: []
+    - name: enum
+      errors: []
+      warnings: []
+    - name: minimum
+      errors: []
+      warnings: []
+    - name: maxProperties
+      errors: []
+      warnings: []
+    - name: unhandled
+      errors: []
+      warnings: []
+    ^.spec.name:
+    - name: type
+      errors: []
+      warnings: []
+    - name: minLength
+      errors:
+      - constraint 2 added when there were no restrictions previously
+      warnings: []
+    - name: required
+      errors: []
+      warnings: []
+    - name: maximum
+      errors: []
+      warnings: []
+    - name: maxLength
+      errors: []
+      warnings: []
+    - name: minItems
+      errors: []
+      warnings: []
+    - name: default
+      errors: []
+      warnings: []
+    - name: maxItems
+      errors: []
+      warnings: []
+    - name: minProperties
+      errors: []
+      warnings: []
+    - name: enum
+      errors: []
+      warnings: []
+    - name: minimum
+      errors: []
+      warnings: []
+    - name: maxProperties
+      errors: []
+      warnings: []
+    - name: unhandled
+      errors: []
+      warnings: []
+    ^.spec.size:
+    - name: type
+      errors: []
+      warnings: []
+    - name: minLength
+      errors: []
+      warnings: []
+    - name: required
+      errors: []
+      warnings: []
+    - name: maximum
+      errors: []
+      warnings: []
+    - name: maxLength
+      errors: []
+      warnings: []
+    - name: minItems
+      errors: []
+      warnings: []
+    - name: default
+      errors: []
+      warnings: []
+    - name: maxItems
+      errors: []
+      warnings: []
+    - name: minProperties
+      errors: []
+      warnings: []
+    - name: enum
+      errors: []
+      warnings: []
+    - name: minimum
+      errors:
+      - constraint 2 added when there were no restrictions previously
+      warnings: []
+    - name: maxProperties
+      errors: []
+      warnings: []
+    - name: unhandled
+      errors: []
+      warnings: []
+servedversionvalidation: {}

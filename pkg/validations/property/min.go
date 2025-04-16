@@ -3,166 +3,226 @@ package property
 import (
 	"cmp"
 	"fmt"
-)
 
-type MinVerificationAdditionEnforcement string
-
-const (
-	MinVerificationAdditionEnforcementStrict = "Strict"
-	MinVerificationAdditionEnforcementNone   = "None"
-)
-
-type MinVerificationIncreaseEnforcement string
-
-const (
-	MinVerificationIncreaseEnforcementStrict = "Strict"
-	MinVerificationIncreaseEnforcementNone   = "None"
+	"github.com/everettraven/crd-diff/pkg/config"
+	"github.com/everettraven/crd-diff/pkg/validations"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // MinOptions is an abstraction for the common
 // options for all the "Minimum" related constraints
 // on CRD properties.
 type MinOptions struct {
-	// AdditionEnforcement is the enforcement strategy to be used when
-	// evaluating if adding a new minimum constraint for a CRD property
-	// is considered incompatible.
-	//
-	// Known values are "Strict" and "None".
-	//
-	// When set to "Strict", adding a new minimum constraint to a CRD property
-	// will be considered incompatible. Defaults to "Strict" when
-	// unknown values are provided.
-	//
-	// When set to "None", adding a new minimum constraint to a CRD property
-	// will not be considered an incompatible change.
-	AdditionEnforcement MinVerificationAdditionEnforcement `json:"additionEnforcement"`
-
-	// IncreaseEnforcement is the enforcement strategy to be used when
-	// evaluating if increaseing the minimum constraint for a CRD property
-	// is considered incompatible.
-	//
-	// Known values are "Strict" and "None".
-	//
-	// When set to "Strict", increasing a minimum constraint to a CRD property
-	// will be considered incompatible. Defaults to "Strict" when
-	// unknown values are provided.
-	//
-	// When set to "None", increasing a minimum constraint for a CRD property
-	// will not be considered an incompatible change.
-	IncreaseEnforcement MinVerificationIncreaseEnforcement `json:"increaseEnforcement"`
+	enforcement config.EnforcementPolicy
 }
 
-func MinVerification[T cmp.Ordered](older, newer *T, minOptions MinOptions) error {
+// MinVerification is a generic helper function for comparing
+// two cmp.Ordered values. It returns an error if:
+// - older value is nil and newer value is not nil
+// - older and newer values are not nil, newer is greater than older
+func MinVerification[T cmp.Ordered](older, newer *T) error {
 	var err error
 	switch {
-	case older == nil && newer != nil && minOptions.AdditionEnforcement != MinVerificationAdditionEnforcementNone:
+	case older == nil && newer != nil:
 		err = fmt.Errorf("constraint %v added when there were no restrictions previously", *newer)
-	case older != nil && newer != nil && *newer > *older && minOptions.IncreaseEnforcement != MinVerificationIncreaseEnforcementNone:
+	case older != nil && newer != nil && *newer > *older:
 		err = fmt.Errorf("constraint increased from %v to %v", *older, *newer)
 	}
 	return err
 }
 
+var (
+	_ validations.Validation                                  = (*Minimum)(nil)
+	_ validations.Comparator[apiextensionsv1.JSONSchemaProps] = (*Minimum)(nil)
+)
+
+const minimumValidationName = "minimum"
+
+// RegisterMinimum registers the Minimum validation
+// with the provided validation registry
+func RegisterMinimum(registry validations.Registry) {
+	registry.Register(minimumValidationName, minimumFactory)
+}
+
+// minimumFactory is a function used to initialize a Minimum validation
+// implementation based on the provided configuration.
+func minimumFactory(_ map[string]interface{}) (validations.Validation, error) {
+	return &Minimum{}, nil
+}
+
+// Minimum is a Validation that can be used to identify
+// incompatible changes to the minimum constraints of CRD properties
 type Minimum struct {
 	MinOptions
 }
 
+// Name returns the name of the Minimum validation
 func (m *Minimum) Name() string {
-	return "minimum"
+	return minimumValidationName
 }
 
-func (m *Minimum) Validate(diff Diff) (Diff, bool, error) {
-	reset := func(diff Diff) Diff {
-		oldProperty := diff.Old()
-		newProperty := diff.New()
-		oldProperty.Minimum = nil
-		newProperty.Minimum = nil
-		return NewDiff(oldProperty, newProperty)
-	}
-
-	err := MinVerification(diff.Old().Minimum, diff.New().Minimum, m.MinOptions)
-	if err != nil {
-		err = fmt.Errorf("minimum: %s", err.Error())
-	}
-
-	resetDiff, handled := IsHandled(diff, reset)
-	return resetDiff, handled, err
+// SetEnforcement sets the EnforcementPolicy for the Minimum validation
+func (m *Minimum) SetEnforcement(policy config.EnforcementPolicy) {
+	m.enforcement = policy
 }
 
+// Compare compares an old and a new JSONSchemaProps, checking for incompatible changes to the minimum constraints of a property.
+// In order for callers to determine if diffs to a JSONSchemaProps have been handled by this validation
+// the JSONSchemaProps.Minimum field will be reset to 'nil' as part of this method.
+// It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
+// to prevent unintentional modifications.
+func (m *Minimum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
+	err := MinVerification(a.Minimum, b.Minimum)
+
+	a.Minimum = nil
+	b.Minimum = nil
+
+	return validations.HandleErrors(m.Name(), m.enforcement, err)
+}
+
+var (
+	_ validations.Validation                                  = (*MinItems)(nil)
+	_ validations.Comparator[apiextensionsv1.JSONSchemaProps] = (*MinItems)(nil)
+)
+
+const minItemsValidationName = "minItems"
+
+// RegisterMinItems registers the MinItems validation
+// with the provided validation registry
+func RegisterMinItems(registry validations.Registry) {
+	registry.Register(minItemsValidationName, minItemsFactory)
+}
+
+// minItemsFactory is a function used to initialize a MinItems validation
+// implementation based on the provided configuration.
+func minItemsFactory(_ map[string]interface{}) (validations.Validation, error) {
+	return &MinItems{}, nil
+}
+
+// MinItems is a Validation that can be used to identify
+// incompatible changes to the minItems constraints of CRD properties
 type MinItems struct {
 	MinOptions
 }
 
+// Name returns the name of the MinItems validation
 func (m *MinItems) Name() string {
-	return "minItems"
+	return minItemsValidationName
 }
 
-func (m *MinItems) Validate(diff Diff) (Diff, bool, error) {
-	reset := func(diff Diff) Diff {
-		oldProperty := diff.Old()
-		newProperty := diff.New()
-		oldProperty.MinItems = nil
-		newProperty.MinItems = nil
-		return NewDiff(oldProperty, newProperty)
-	}
-
-	err := MinVerification(diff.Old().MinItems, diff.New().MinItems, m.MinOptions)
-	if err != nil {
-		err = fmt.Errorf("minItems: %s", err.Error())
-	}
-
-	resetDiff, handled := IsHandled(diff, reset)
-	return resetDiff, handled, err
+// SetEnforcement sets the EnforcementPolicy for the MinItems validation
+func (m *MinItems) SetEnforcement(policy config.EnforcementPolicy) {
+	m.enforcement = policy
 }
 
+// Compare compares an old and a new JSONSchemaProps, checking for incompatible changes to the minItems constraints of a property.
+// In order for callers to determine if diffs to a JSONSchemaProps have been handled by this validation
+// the JSONSchemaProps.MinItems field will be reset to 'nil' as part of this method.
+// It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
+// to prevent unintentional modifications.
+func (m *MinItems) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
+	err := MinVerification(a.MinItems, b.MinItems)
+
+	a.MinItems = nil
+	b.MinItems = nil
+
+	return validations.HandleErrors(m.Name(), m.enforcement, err)
+}
+
+var (
+	_ validations.Validation                                  = (*MinLength)(nil)
+	_ validations.Comparator[apiextensionsv1.JSONSchemaProps] = (*MinLength)(nil)
+)
+
+const minLengthValidationName = "minLength"
+
+// RegisterMinLength registers the MinLength validation
+// with the provided validation registry
+func RegisterMinLength(registry validations.Registry) {
+	registry.Register(minLengthValidationName, minLengthFactory)
+}
+
+// minLengthFactory is a function used to initialize a MinLength validation
+// implementation based on the provided configuration.
+func minLengthFactory(_ map[string]interface{}) (validations.Validation, error) {
+	return &MinLength{}, nil
+}
+
+// MinLength is a Validation that can be used to identify
+// incompatible changes to the minLength constraints of CRD properties
 type MinLength struct {
 	MinOptions
 }
 
+// Name returns the name of the MinLength validation
 func (m *MinLength) Name() string {
-	return "minLength"
+	return minLengthValidationName
 }
 
-func (m *MinLength) Validate(diff Diff) (Diff, bool, error) {
-	reset := func(diff Diff) Diff {
-		oldProperty := diff.Old()
-		newProperty := diff.New()
-		oldProperty.MinLength = nil
-		newProperty.MinLength = nil
-		return NewDiff(oldProperty, newProperty)
-	}
-
-	err := MinVerification(diff.Old().MinLength, diff.New().MinLength, m.MinOptions)
-	if err != nil {
-		err = fmt.Errorf("minLength: %s", err.Error())
-	}
-
-	resetDiff, handled := IsHandled(diff, reset)
-	return resetDiff, handled, err
+// SetEnforcement sets the EnforcementPolicy for the MinLength validation
+func (m *MinLength) SetEnforcement(policy config.EnforcementPolicy) {
+	m.enforcement = policy
 }
 
+// Compare compares an old and a new JSONSchemaProps, checking for incompatible changes to the minLength constraints of a property.
+// In order for callers to determine if diffs to a JSONSchemaProps have been handled by this validation
+// the JSONSchemaProps.MinLength field will be reset to 'nil' as part of this method.
+// It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
+// to prevent unintentional modifications.
+func (m *MinLength) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
+	err := MinVerification(a.MinLength, b.MinLength)
+
+	a.MinLength = nil
+	b.MinLength = nil
+
+	return validations.HandleErrors(m.Name(), m.enforcement, err)
+}
+
+var (
+	_ validations.Validation                                  = (*MinProperties)(nil)
+	_ validations.Comparator[apiextensionsv1.JSONSchemaProps] = (*MinProperties)(nil)
+)
+
+const minPropertiesValidationName = "minProperties"
+
+// RegisterMinProperties registers the MinProperties validation
+// with the provided validation registry
+func RegisterMinProperties(registry validations.Registry) {
+	registry.Register(minPropertiesValidationName, minPropertiesFactory)
+}
+
+// minPropertiesFactory is a function used to initialize a MinProperties validation
+// implementation based on the provided configuration.
+func minPropertiesFactory(_ map[string]interface{}) (validations.Validation, error) {
+	return &MinProperties{}, nil
+}
+
+// MinProperties is a Validation that can be used to identify
+// incompatible changes to the minProperties constraints of CRD properties
 type MinProperties struct {
 	MinOptions
 }
 
+// Name returns the name of the MinProperties validation
 func (m *MinProperties) Name() string {
-	return "minProperties"
+	return minPropertiesValidationName
 }
 
-func (m *MinProperties) Validate(diff Diff) (Diff, bool, error) {
-	reset := func(diff Diff) Diff {
-		oldProperty := diff.Old()
-		newProperty := diff.New()
-		oldProperty.MinProperties = nil
-		newProperty.MinProperties = nil
-		return NewDiff(oldProperty, newProperty)
-	}
+// SetEnforcement sets the EnforcementPolicy for the MinProperties validation
+func (m *MinProperties) SetEnforcement(policy config.EnforcementPolicy) {
+	m.enforcement = policy
+}
 
-	err := MinVerification(diff.Old().MinProperties, diff.New().MinProperties, m.MinOptions)
-	if err != nil {
-		err = fmt.Errorf("minProperties: %s", err.Error())
-	}
+// Compare compares an old and a new JSONSchemaProps, checking for incompatible changes to the minProperties constraints of a property.
+// In order for callers to determine if diffs to a JSONSchemaProps have been handled by this validation
+// the JSONSchemaProps.MinProperties field will be reset to 'nil' as part of this method.
+// It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
+// to prevent unintentional modifications.
+func (m *MinProperties) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
+	err := MinVerification(a.MinProperties, b.MinProperties)
 
-	resetDiff, handled := IsHandled(diff, reset)
-	return resetDiff, handled, err
+	a.MinProperties = nil
+	b.MinProperties = nil
+
+	return validations.HandleErrors(m.Name(), m.enforcement, err)
 }
