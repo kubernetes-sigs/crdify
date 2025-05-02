@@ -1,83 +1,52 @@
 package property
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	internaltesting "github.com/everettraven/crd-diff/pkg/validations/internal/testing"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func TestRequired(t *testing.T) {
-	type testcase struct {
-		name        string
-		oldProperty *apiextensionsv1.JSONSchemaProps
-		newProperty *apiextensionsv1.JSONSchemaProps
-		err         error
-		handled     bool
-		required    *Required
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged ",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				Required: []string{
 					"foo",
 				},
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				Required: []string{
 					"foo",
 				},
 			},
-			err:      nil,
-			handled:  true,
-			required: &Required{},
+			Flagged:              false,
+			ComparableValidation: &Required{},
 		},
 		{
-			name:        "new required field, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new required field, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				Required: []string{
 					"foo",
 				},
 			},
-			err:      errors.New("new required fields [foo] added"),
-			handled:  true,
-			required: &Required{},
+			Flagged:              true,
+			ComparableValidation: &Required{},
 		},
 		{
-			name:        "new required field, new enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				Required: []string{
-					"foo",
-				},
-			},
-			err:     nil,
-			handled: true,
-			required: &Required{
-				NewEnforcement: RequiredValidationNewEnforcementNone,
-			},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:      nil,
-			handled:  false,
-			required: &Required{},
+			Flagged:              false,
+			ComparableValidation: &Required{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.required.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
 	}
+
+	internaltesting.RunTestcases(t, testcases...)
 }

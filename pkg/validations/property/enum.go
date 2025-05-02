@@ -3,101 +3,145 @@ package property
 import (
 	"fmt"
 
+	"github.com/everettraven/crd-diff/pkg/config"
+	"github.com/everettraven/crd-diff/pkg/validations"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-type EnumValidationRemovalEnforcement string
+const enumValidationName = "enum"
 
-const (
-	EnumValidationRemovalEnforcementStrict = "Strict"
-	EnumValidationRemovalEnforcementNone   = "None"
+var (
+	_ validations.Validation                                  = (*Enum)(nil)
+	_ validations.Comparator[apiextensionsv1.JSONSchemaProps] = (*Enum)(nil)
 )
 
-type EnumValidationAdditionEnforcement string
+// RegisterEnum registers the Enum validation
+// with the provided validation registry
+func RegisterEnum(registry validations.Registry) {
+	registry.Register(enumValidationName, enumFactory)
+}
+
+// enumFactory is a function used to initialize an Enum validation
+// implementation based on the provided configuration.
+func enumFactory(cfg map[string]interface{}) (validations.Validation, error) {
+	enumCfg := &EnumConfig{}
+	err := ConfigToType(cfg, enumCfg)
+	if err != nil {
+		return nil, fmt.Errorf("parsing config: %w", err)
+	}
+
+	err = ValidateEnumConfig(enumCfg)
+	if err != nil {
+		return nil, fmt.Errorf("validating enum config: %w", err)
+	}
+
+	return &Enum{EnumConfig: *enumCfg}, nil
+}
+
+// ValidateEnumConfig validates the provided EnumConfig
+// setting default values where appropriate.
+// Currently the defaulting behavior defaults the
+// EnumConfig.AdditionPolicy to AdditionPolicyDisallow
+// if it is set to the empty string ("")
+func ValidateEnumConfig(in *EnumConfig) error {
+	if in == nil {
+		// nothing to validate
+		return nil
+	}
+
+	switch in.AdditionPolicy {
+	case AdditionPolicyAllow, AdditionPolicyDisallow:
+		// do nothing, valid case
+	case AdditionPolicy(""):
+		// default to disallow
+		in.AdditionPolicy = AdditionPolicyDisallow
+	default:
+		return fmt.Errorf("unknown addition policy %q", in.AdditionPolicy)
+	}
+	return nil
+}
+
+// AdditionPolicy is used to represent how the Enum validation
+// should determine compatibility of adding new enum values to an
+// existing enum constraint
+type AdditionPolicy string
 
 const (
-	EnumValidationAdditionEnforcementStrict                  = "Strict"
-	EnumValidationAdditionEnforcementIfPreviouslyConstrained = "IfPreviouslyConstrained"
-	EnumValidationAdditionEnforcementNone                    = "None"
+	// AdditionPolicyAllow signals that adding new enum values to
+	// an existing enum constraint should be considered a compatible change
+	AdditionPolicyAllow AdditionPolicy = "Allow"
+
+	// AdditionPolicyDisallow signals that adding new enum values to
+	// an existing enum constraint should be considered an incompatible change
+	AdditionPolicyDisallow AdditionPolicy = "Disallow"
 )
+
+// EnumConfig contains additional configurations for the Enum validation
+type EnumConfig struct {
+	// additionPolicy is how adding enums to an existing set of
+	// enums should be treated.
+	// Allowed values are Allow and Disallow.
+	// When set to Allow, adding new values to an existing set
+	// of enums will not be flagged.
+	// When set to Disallow, adding new values to an existing
+	// set of enums will be flagged.
+	// Defaults to Disallow.
+	AdditionPolicy AdditionPolicy `json:"additionPolicy,omitempty"`
+}
 
 // Enum is a Validation that can be used to identify
 // incompatible changes to the enum values of CRD properties
 type Enum struct {
-	// RemovalEnforcement is the enforcement strategy that should be used
-	// when evaluating if the removal of an allowed enum value for a property
-	// is considered incompatible.
-	//
-	// Known enforcement strategies are "Strict" and "None".
-	//
-	// When set to "Strict", removal of an enum value for a property
-	// is considered incompatible.
-	//
-	// When set to "None", removal of an enum value for a property is
-	// not considered incompatible.
-	//
-	// If set to an unknown value, the "Strict" enforcement strategy
-	// will be used.
-	RemovalEnforcement EnumValidationRemovalEnforcement
+	// EnumConfig is the set of additional configuration options
+	EnumConfig
 
-	// AdditionEnforcement is the enforcement strategy that should be used
-	// when evaluating if the addition of an allowed enum value for a property
-	// is considered incompatible.
-	//
-	// Known enforcement strategies are "Strict", "IfPreviouslyConstrained", and "None".
-	//
-	// When set to "Strict", addition of any new enum values for a property
-	// is considered incompatible, including when there were previously no enum constraints.
-	//
-	// When set to "IfPreviouslyConstrained", addition any number of enum values for
-	// a property when it was not previously constrained by enum values is considered incompatible.
-	// Addition of enum values for a property, when it was previously constrained by enum values,
-	// is considered compatible with this enforcement strategy
-	//
-	// When set to "None", addition of a new enum value for a property is
-	// not considered incompatible.
-	//
-	// If set to an unknown value, the "NotPreviouslyConstrained" enforcement strategy
-	// will be used.
-	AdditionEnforcement EnumValidationAdditionEnforcement
+	// enforcement is the EnforcementPolicy that this validation
+	// should use when performing its validation logic
+	enforcement config.EnforcementPolicy
 }
 
+// Name returns the name of the Enum validation
 func (e *Enum) Name() string {
-	return "enum"
+	return enumValidationName
 }
 
-func (e *Enum) Validate(diff Diff) (Diff, bool, error) {
-	reset := func(diff Diff) Diff {
-		oldProperty := diff.Old()
-		newProperty := diff.New()
-		oldProperty.Enum = []apiextensionsv1.JSON{}
-		newProperty.Enum = []apiextensionsv1.JSON{}
-		return NewDiff(oldProperty, newProperty)
-	}
+// SetEnforcement sets the EnforcementPolicy for the Enum validation
+func (e *Enum) SetEnforcement(policy config.EnforcementPolicy) {
+	e.enforcement = policy
+}
 
+// Compare compares an old and a new JSONSchemaProps, checking for incompatible changes to the enum constraints of a property.
+// In order for callers to determine if diffs to a JSONSchemaProps have been handled by this validation
+// the JSONSchemaProps.Enum field will be reset to 'nil' as part of this method.
+// It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
+// to prevent unintentional modifications.
+func (e *Enum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
 	oldEnums := sets.New[string]()
-	for _, json := range diff.Old().Enum {
+	for _, json := range a.Enum {
 		oldEnums.Insert(string(json.Raw))
 	}
 
 	newEnums := sets.New[string]()
-	for _, json := range diff.New().Enum {
+	for _, json := range b.Enum {
 		newEnums.Insert(string(json.Raw))
 	}
 	removedEnums := oldEnums.Difference(newEnums)
 	addedEnums := newEnums.Difference(oldEnums)
+
 	var err error
 
 	switch {
-	case oldEnums.Len() == 0 && newEnums.Len() > 0 && e.AdditionEnforcement != EnumValidationAdditionEnforcementNone:
+	case oldEnums.Len() == 0 && newEnums.Len() > 0:
 		err = fmt.Errorf("enum constraints %v added when there were no restrictions previously", newEnums.UnsortedList())
-	case removedEnums.Len() > 0 && e.RemovalEnforcement != EnumValidationRemovalEnforcementNone:
+	case removedEnums.Len() > 0:
 		err = fmt.Errorf("enums %v removed from the set of previously allowed values", removedEnums.UnsortedList())
-	case addedEnums.Len() > 0 && e.AdditionEnforcement == EnumValidationAdditionEnforcementStrict:
+	case addedEnums.Len() > 0 && e.AdditionPolicy != AdditionPolicyAllow:
 		err = fmt.Errorf("enums %v added to the set of allowed values", addedEnums.UnsortedList())
 	}
 
-    resetDiff, handled := IsHandled(diff, reset) 
-	return resetDiff, handled, err
+	a.Enum = nil
+	b.Enum = nil
+
+	return validations.HandleErrors(e.Name(), e.enforcement, err)
 }

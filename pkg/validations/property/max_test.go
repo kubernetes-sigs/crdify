@@ -1,442 +1,249 @@
 package property
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	internaltesting "github.com/everettraven/crd-diff/pkg/validations/internal/testing"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/utils/ptr"
 )
 
 func TestMaximum(t *testing.T) {
-	type testcase struct {
-		name        string
-		oldProperty *apiextensionsv1.JSONSchemaProps
-		newProperty *apiextensionsv1.JSONSchemaProps
-		err         error
-		handled     bool
-		maximum     *Maximum
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(10.0),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(10.0),
 			},
-			err:     nil,
-			handled: true,
-			maximum: &Maximum{},
+			Flagged:              false,
+			ComparableValidation: &Maximum{},
 		},
 		{
-			name:        "new maximum constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new maximum constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(10.0),
 			},
-			err:     errors.New("maximum: constraint 10 added when there were no restrictions previously"),
-			handled: true,
-			maximum: &Maximum{},
+			Flagged:              true,
+			ComparableValidation: &Maximum{},
 		},
 		{
-			name:        "new maximum constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				Maximum: ptr.To(10.0),
-			},
-			err:     nil,
-			handled: true,
-			maximum: &Maximum{
-				MaxOptions: MaxOptions{
-					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "maximum constraint decreased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maximum constraint decreased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(20.0),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(10.0),
 			},
-			err:     errors.New("maximum: constraint decreased from 20 to 10"),
-			handled: true,
-			maximum: &Maximum{},
+			Flagged:              true,
+			ComparableValidation: &Maximum{},
 		},
 		{
-			name: "maximum constraint decreased, decrease enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maximum constraint increased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(20.0),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				Maximum: ptr.To(10.0),
-			},
-			err:     nil,
-			handled: true,
-			maximum: &Maximum{
-				MaxOptions{
-					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "maximum constraint increased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				Maximum: ptr.To(20.0),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				Maximum: ptr.To(30.0),
 			},
-			err:     nil,
-			handled: true,
-			maximum: &Maximum{},
+			Flagged:              false,
+			ComparableValidation: &Maximum{},
 		},
 		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:     nil,
-			handled: false,
-			maximum: &Maximum{},
+			Flagged:              false,
+			ComparableValidation: &Maximum{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.maximum.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
 	}
+
+	internaltesting.RunTestcases(t, testcases...)
 }
 
 func TestMaxItems(t *testing.T) {
-	type testcase struct {
-		name        string
-		oldProperty *apiextensionsv1.JSONSchemaProps
-		newProperty *apiextensionsv1.JSONSchemaProps
-		err         error
-		handled     bool
-		maxItems    *MaxItems
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxItems: ptr.To(int64(10)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxItems: ptr.To(int64(10)),
 			},
-			err:      nil,
-			handled:  true,
-			maxItems: &MaxItems{},
+			Flagged:              false,
+			ComparableValidation: &MaxItems{},
 		},
 		{
-			name:        "new maxItems constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new maxItems constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxItems: ptr.To(int64(10)),
 			},
-			err:      errors.New("maxItems: constraint 10 added when there were no restrictions previously"),
-			handled:  true,
-			maxItems: &MaxItems{},
+			Flagged:              true,
+			ComparableValidation: &MaxItems{},
 		},
 		{
-			name:        "new maxItems constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxItems: ptr.To(int64(10)),
-			},
-			err:     nil,
-			handled: true,
-			maxItems: &MaxItems{
-				MaxOptions: MaxOptions{
-					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "maxItems constraint decreased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maxItems constraint decreased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxItems: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxItems: ptr.To(int64(10)),
 			},
-			err:      errors.New("maxItems: constraint decreased from 20 to 10"),
-			handled:  true,
-			maxItems: &MaxItems{},
+			Flagged:              true,
+			ComparableValidation: &MaxItems{},
 		},
 		{
-			name: "maxItems constraint decreased, decrease enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maxItems constraint increased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxItems: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxItems: ptr.To(int64(10)),
+			New: &apiextensionsv1.JSONSchemaProps{
+				MaxItems: ptr.To(int64(30)),
 			},
-			err:     nil,
-			handled: true,
-			maxItems: &MaxItems{
-				MaxOptions: MaxOptions{
-					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
-				},
-			},
+			Flagged:              false,
+			ComparableValidation: &MaxItems{},
 		},
 		{
-			name: "maxitems constraint increased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxItems: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxItems: ptr.To(int64(20)),
-			},
-			err:      nil,
-			handled:  true,
-			maxItems: &MaxItems{},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:      nil,
-			handled:  false,
-			maxItems: &MaxItems{},
+			Flagged:              false,
+			ComparableValidation: &MaxItems{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.maxItems.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
 	}
+
+	internaltesting.RunTestcases(t, testcases...)
 }
 
 func TestMaxLength(t *testing.T) {
-	type testcase struct {
-		name        string
-		oldProperty *apiextensionsv1.JSONSchemaProps
-		newProperty *apiextensionsv1.JSONSchemaProps
-		err         error
-		handled     bool
-		maxLength   *MaxLength
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxLength: ptr.To(int64(10)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxLength: ptr.To(int64(10)),
 			},
-			err:       nil,
-			handled:   true,
-			maxLength: &MaxLength{},
+			Flagged:              false,
+			ComparableValidation: &MaxLength{},
 		},
 		{
-			name:        "new maxLength constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new maxLength constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxLength: ptr.To(int64(10)),
 			},
-			err:       errors.New("maxLength: constraint 10 added when there were no restrictions previously"),
-			handled:   true,
-			maxLength: &MaxLength{},
+			Flagged:              true,
+			ComparableValidation: &MaxLength{},
 		},
 		{
-			name:        "new maxLength constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxLength: ptr.To(int64(10)),
-			},
-			err:     nil,
-			handled: true,
-			maxLength: &MaxLength{
-				MaxOptions: MaxOptions{
-					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "maxLength constraint decreased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maxLength constraint decreased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxLength: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxLength: ptr.To(int64(10)),
 			},
-			err:       errors.New("maxLength: constraint decreased from 20 to 10"),
-			handled:   true,
-			maxLength: &MaxLength{},
+			Flagged:              true,
+			ComparableValidation: &MaxLength{},
 		},
 		{
-			name: "maxLength constraint decreased, decrease enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maxLength constraint increased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxLength: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxLength: ptr.To(int64(10)),
+			New: &apiextensionsv1.JSONSchemaProps{
+				MaxLength: ptr.To(int64(30)),
 			},
-			err:     nil,
-			handled: true,
-			maxLength: &MaxLength{
-				MaxOptions: MaxOptions{
-					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
-				},
-			},
+			Flagged:              false,
+			ComparableValidation: &MaxLength{},
 		},
 		{
-			name: "maxLength constraint increased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxLength: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxLength: ptr.To(int64(20)),
-			},
-			err:       nil,
-			handled:   true,
-			maxLength: &MaxLength{},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:       nil,
-			handled:   false,
-			maxLength: &MaxLength{},
+			Flagged:              false,
+			ComparableValidation: &MaxLength{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.maxLength.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
 	}
+
+	internaltesting.RunTestcases(t, testcases...)
 }
 
 func TestMaxProperties(t *testing.T) {
-	type testcase struct {
-		name          string
-		oldProperty   *apiextensionsv1.JSONSchemaProps
-		newProperty   *apiextensionsv1.JSONSchemaProps
-		err           error
-		handled       bool
-		maxProperties *MaxProperties
-	}
-
-	for _, tc := range []testcase{
+	testcases := []internaltesting.Testcase[apiextensionsv1.JSONSchemaProps]{
 		{
-			name: "no diff, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "no diff, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxProperties: ptr.To(int64(10)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxProperties: ptr.To(int64(10)),
 			},
-			err:           nil,
-			handled:       true,
-			maxProperties: &MaxProperties{},
+			Flagged:              false,
+			ComparableValidation: &MaxProperties{},
 		},
 		{
-			name:        "new maxProperties constraint, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "new maxProperties constraint, flagged",
+			Old:  &apiextensionsv1.JSONSchemaProps{},
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxProperties: ptr.To(int64(10)),
 			},
-			err:           errors.New("maxProperties: constraint 10 added when there were no restrictions previously"),
-			handled:       true,
-			maxProperties: &MaxProperties{},
+			Flagged:              true,
+			ComparableValidation: &MaxProperties{},
 		},
 		{
-			name:        "new maxProperties constraint, addition enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxProperties: ptr.To(int64(10)),
-			},
-			err:     nil,
-			handled: true,
-			maxProperties: &MaxProperties{
-				MaxOptions: MaxOptions{
-					AdditionEnforcement: MaxVerificationAdditionEnforcementNone,
-				},
-			},
-		},
-		{
-			name: "maxProperties constraint decreased, error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maxProperties constraint decreased, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxProperties: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				MaxProperties: ptr.To(int64(10)),
 			},
-			err:           errors.New("maxProperties: constraint decreased from 20 to 10"),
-			handled:       true,
-			maxProperties: &MaxProperties{},
+			Flagged:              true,
+			ComparableValidation: &MaxProperties{},
 		},
 		{
-			name: "maxProperties constraint decreased, decrease enforcement set to None, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "maxProperties constraint increased, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				MaxProperties: ptr.To(int64(20)),
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxProperties: ptr.To(int64(10)),
+			New: &apiextensionsv1.JSONSchemaProps{
+				MaxProperties: ptr.To(int64(30)),
 			},
-			err:     nil,
-			handled: true,
-			maxProperties: &MaxProperties{
-				MaxOptions: MaxOptions{
-					DecreaseEnforcement: MaxVerificationDecreaseEnforcementNone,
-				},
-			},
+			Flagged:              false,
+			ComparableValidation: &MaxProperties{},
 		},
 		{
-			name: "maxProperties constraint increased, no error, handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxProperties: ptr.To(int64(10)),
-			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
-				MaxProperties: ptr.To(int64(20)),
-			},
-			err:           nil,
-			handled:       true,
-			maxProperties: &MaxProperties{},
-		},
-		{
-			name: "different field changed, no error, not handled",
-			oldProperty: &apiextensionsv1.JSONSchemaProps{
+			Name: "different field changed, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
 			},
-			newProperty: &apiextensionsv1.JSONSchemaProps{
+			New: &apiextensionsv1.JSONSchemaProps{
 				ID: "bar",
 			},
-			err:           nil,
-			handled:       false,
-			maxProperties: &MaxProperties{},
+			Flagged:              false,
+			ComparableValidation: &MaxProperties{},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			_, handled, err := tc.maxProperties.Validate(NewDiff(tc.oldProperty, tc.newProperty))
-			require.Equal(t, tc.err, err)
-			require.Equal(t, tc.handled, handled)
-		})
 	}
+
+	internaltesting.RunTestcases(t, testcases...)
 }

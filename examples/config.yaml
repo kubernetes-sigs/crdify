@@ -1,73 +1,8 @@
-# YAML representation of the default strict config
-# As of now, this is pretty barebones as most of the checks
-# aren't very configurable, but that is likely to change in the
-# future.
-checks:
-  crd:
-    scope:
-      enabled: true
-    existingFieldRemoval:
-      enabled: true
-    storedVersionRemoval:
-      enabled: true
-  version:
-    sameVersion:
-      enabled: true
-      unhandledFailureMode: "Closed"
-      enum:
-        enabled: true
-        removalEnforcement: "Strict"
-        additionEnforcement: "Strict"
-      default:
-        enabled: true
-        changeEnforcement: "Strict"
-        removalEnforcement: "Strict"
-        additionEnforcement: "Strict"
-      required:
-        enabled: true
-      type:
-        enabled: true
-      maximum:
-        enabled: true
-      maxItems:
-        enabled: true
-      maxProperties:
-        enabled: true
-      maxLength:
-        enabled: true
-      minimum:
-        enabled: true
-      minItems:
-        enabled: true
-      minProperties:
-        enabled: true
-      minLength:
-        enabled: true
-    servedVersion:
-      enabled: true
-      unhandledFailureMode: "Closed"
-      ignoreConversion: false
-      enum:
-        enabled: true
-      default:
-        enabled: true
-      required:
-        enabled: true
-      type:
-        enabled: true
-      maximum:
-        enabled: true
-      maxItems:
-        enabled: true
-      maxProperties:
-        enabled: true
-      maxLength:
-        enabled: true
-      minimum:
-        enabled: true
-      minItems:
-        enabled: true
-      minProperties:
-        enabled: true
-      minLength:
-        enabled: true
+validations:
+  - name: default
+    enforcement: Error
+  # example of configuring enum validation to allow addition of new enum constraint values
+  - name: enum
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow

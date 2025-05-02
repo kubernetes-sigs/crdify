@@ -13,17 +13,25 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
+// File is a Loader implementation to load a CustomResourceDefinition
+// from a file.
 type File struct {
+	// filesystem is the filesystem used to load the file containing
+	// the CustomResourceDefinition.
 	filesystem afero.Fs
 }
 
-func NewFile(filesystem afero.Fs) *File {
+// New returns a new instance of the File Loader
+// using the provided afero.Fs as the underlying file system.
+func New(filesystem afero.Fs) *File {
 	return &File{
 		filesystem: filesystem,
 	}
 }
 
-func (f *File) Load(ctx context.Context, location url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
+// Load parses the hostname and path of the provided URL to determine the file containing the CustomResourceDefinition
+// and reads it into a new CustomResourceDefinition object.
+func (f *File) Load(_ context.Context, location *url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
 	filePath, err := filepath.Abs(path.Join(location.Hostname(), location.Path))
 	if err != nil {
 		return nil, fmt.Errorf("ensuring absolute path: %w", err)

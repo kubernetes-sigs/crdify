@@ -1,374 +1,230 @@
 package config
 
 import (
-	"github.com/everettraven/crd-diff/pkg/validations/property"
-	"github.com/everettraven/crd-diff/pkg/validations/validators/crd"
-	"github.com/everettraven/crd-diff/pkg/validations/validators/version"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+
+	"sigs.k8s.io/yaml"
 )
 
-var StrictConfig = Config{
-	Checks: Checks{
-		CRD: StrictCRDChecks,
-		Version: VersionChecks{
-			SameVersion:   StrictSameVersionChecks,
-			ServedVersion: StrictServedVersionChecks,
-		},
-	},
-}
+// EnforcementPolicy is a representation of how validations
+// should be enforced
+type EnforcementPolicy string
 
-var StrictCRDChecks = CRDChecks{
-	Scope: CheckConfig{
-		Enabled: true,
-	},
-	ExistingFieldRemoval: CheckConfig{
-		Enabled: true,
-	},
-	StoredVersionRemoval: CheckConfig{
-		Enabled: true,
-	},
-}
+const (
+	// EnforcementPolicyError is used to represent that a validation
+	// should report an error when identifying incompatible changes
+	EnforcementPolicyError EnforcementPolicy = "Error"
 
-var StrictSameVersionChecks = SameVersionCheckConfig{
-	CheckConfig: CheckConfig{
-		Enabled: true,
-	},
-	VersionCheckConfig: StrictVersionCheckConfig,
-}
+	// EnforcementPolicyWarn is used to represent that a validation
+	// should report a warning when identifying incompatible changes
+	EnforcementPolicyWarn EnforcementPolicy = "Warn"
 
-var StrictServedVersionChecks = ServedVersionCheckConfig{
-	CheckConfig: CheckConfig{
-		Enabled: true,
-	},
-	IgnoreConversion:   false,
-	VersionCheckConfig: StrictVersionCheckConfig,
-}
+	// EnforcementPolicyNone is used to represent that a validation
+	// should not report anything when identifying incompatible changes
+	EnforcementPolicyNone EnforcementPolicy = "None"
+)
 
-var StrictVersionCheckConfig = VersionCheckConfig{
-	UnhandledFailureMode: version.FailureModeClosed,
-	PropertyCheckConfig:  StrictPropertyCheckConfig,
-}
+// ConversionPolicy is a representation of how the served version
+// validator should react when a CRD specifies a conversion
+// strategy
+type ConversionPolicy string
 
-var StrictPropertyCheckConfig = PropertyCheckConfig{
-	Enum: EnumCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		RemovalEnforcement:  property.EnumValidationRemovalEnforcementStrict,
-		AdditionEnforcement: property.EnumValidationAdditionEnforcementStrict,
-	},
-	Default: DefaultCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		ChangeEnforcement:   property.DefaultValidationChangeEnforcementStrict,
-		RemovalEnforcement:  property.DefaultValidationRemovalEnforcementStrict,
-		AdditionEnforcement: property.DefaultValidationAdditionEnforcementStrict,
-	},
-	Required: RequiredCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		NewEnforcement: property.RequiredValidationNewEnforcementStrict,
-	},
-	Type: TypeCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		ChangeEnforcement: property.TypeValidationChangeEnforcementStrict,
-	},
-	Maximum: MaxCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MaxOptions: property.MaxOptions{
-			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
-			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
-		},
-	},
-	MaxItems: MaxCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MaxOptions: property.MaxOptions{
-			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
-			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
-		},
-	},
-	MaxProperties: MaxCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MaxOptions: property.MaxOptions{
-			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
-			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
-		},
-	},
-	MaxLength: MaxCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MaxOptions: property.MaxOptions{
-			AdditionEnforcement: property.MaxVerificationAdditionEnforcementStrict,
-			DecreaseEnforcement: property.MaxVerificationDecreaseEnforcementStrict,
-		},
-	},
-	Minimum: MinCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MinOptions: property.MinOptions{
-			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
-			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
-		},
-	},
-	MinItems: MinCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MinOptions: property.MinOptions{
-			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
-			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
-		},
-	},
-	MinProperties: MinCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MinOptions: property.MinOptions{
-			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
-			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
-		},
-	},
-	MinLength: MinCheckConfig{
-		CheckConfig: CheckConfig{
-			Enabled: true,
-		},
-		MinOptions: property.MinOptions{
-			AdditionEnforcement: property.MinVerificationAdditionEnforcementStrict,
-			IncreaseEnforcement: property.MinVerificationIncreaseEnforcementStrict,
-		},
-	},
-}
+const (
+	// ConversionPolicyNone is used to represent that the served
+	// version validator should not treat CRDs with a conversion strategy
+	// differently and should run all the validations on detected changes
+	// across served versions of the CRD.
+	ConversionPolicyNone ConversionPolicy = "None"
 
+	// ConversionPolicyIgnore is used to represent that the served
+	// version validator should treat CRDs with a conversion strategy
+	// specified as a valid reason to skip running the validations
+	// on changes across served versions of the CRD.
+	ConversionPolicyIgnore ConversionPolicy = "Ignore"
+)
+
+// Config is the configuration used for dictating how validations
+// and validators should be configured.
 type Config struct {
-	Checks Checks `yaml:"checks"`
+	// validations is an optional field used to configure the set of
+	// validations that should be run during comparisons.
+	//
+	// Configuration of validations is strictly additive.
+	// Default behaviors of validations will be used in the
+	// event they are not included in the set of configured validations.
+	Validations []ValidationConfig `json:"validations"`
+
+	// unhandledEnforcement is an optional field used to configure
+	// how changes that have not been handled by an existing validation
+	// should be treated.
+	//
+	// Allowed values are Error, Warn, and None.
+	//
+	// When set to Error, any unhandled changes will result in an error.
+	//
+	// When set to Warn, any unhandled changes will result in a warning.
+	//
+	// When set to None, unhandled changes will be ignored.
+	// Defaults to Error.
+	UnhandledEnforcement EnforcementPolicy `json:"unhandledEnforcement"`
+
+	// conversion is an optional field used to configure how validations
+	// are run against served versions of the CRD.
+	//
+	// Allowed values are None and Ignore.
+	//
+	// When set to Ignore, if a conversion strategy of "Webhook" is specified served
+	// versions will not be validated.
+	//
+	// When set to None, even if a conversion strategy of "Webhook" is specified served
+	// versions will be validated.
+	// Defaults to None.
+	Conversion ConversionPolicy `json:"conversion"`
 }
 
-type Checks struct {
-	CRD     CRDChecks     `yaml:"crd"`
-	Version VersionChecks `yaml:"version"`
+// ValidationConfig is used to dictate how individual validations
+// should be configured.
+type ValidationConfig struct {
+	// name is a required field used to specify a validation.
+	// name must be a known validation.
+	Name string `json:"name"`
+
+	// enforcement is a required field used to specify how a validation
+	// should be enforced.
+	//
+	// Allowed values are Error, Warn, and None.
+	//
+	// When set to Error, any incompatibilities found by the validation
+	// will result in an error message.
+	//
+	// When set to Warn, any incompatibilities found by the validation
+	// will result in a warning message.
+	//
+	// When set to None, the validation will not be run.
+	Enforcement EnforcementPolicy `json:"enforcement"`
+
+	// configuration is an optional field used to specify a configuration
+	// for the validation.
+	Configuration map[string]interface{} `json:"configuration"`
 }
 
-type CRDChecks struct {
-	Scope                CheckConfig `yaml:"scope"`
-	ExistingFieldRemoval CheckConfig `yaml:"existingFieldRemoval"`
-	StoredVersionRemoval CheckConfig `yaml:"storedVersionRemoval"`
-}
+// Load reads a file into a Config object and validates it.
+// If there are any errors encountered while loading the file contents
+// into the Config object a nil value and error will be returned.
+// Otherwise, a pointer to the Config object will be returned alongside a nil error.
+func Load(configFile string) (*Config, error) {
+	cfg := &Config{}
+	if configFile != "" {
+		file, err := os.Open(configFile)
+		if err != nil {
+			return nil, fmt.Errorf("loading config file %q: %w", configFile, err)
+		}
 
-type VersionChecks struct {
-	SameVersion   SameVersionCheckConfig   `yaml:"sameVersion"`
-	ServedVersion ServedVersionCheckConfig `yaml:"servedVersion"`
-}
+		configBytes, err := io.ReadAll(file)
+		if err != nil {
+			return nil, fmt.Errorf("reading config file %q: %w", configFile, err)
+		}
+		file.Close()
 
-type SameVersionCheckConfig struct {
-	CheckConfig
-	VersionCheckConfig
-}
-
-type ServedVersionCheckConfig struct {
-	CheckConfig
-	VersionCheckConfig
-	IgnoreConversion bool `yaml:"ignoreConversion"`
-}
-
-type VersionCheckConfig struct {
-	PropertyCheckConfig
-	UnhandledFailureMode version.FailureMode `yaml:"unhandledFailureMode"`
-}
-
-type PropertyCheckConfig struct {
-	Enum          EnumCheckConfig     `yaml:"enum"`
-	Default       DefaultCheckConfig  `yaml:"default"`
-	Required      RequiredCheckConfig `yaml:"required"`
-	Type          TypeCheckConfig     `yaml:"type"`
-	Maximum       MaxCheckConfig      `yaml:"maximum"`
-	MaxItems      MaxCheckConfig      `yaml:"maxItems"`
-	MaxProperties MaxCheckConfig      `yaml:"maxProperties"`
-	MaxLength     MaxCheckConfig      `yaml:"maxLength"`
-	Minimum       MinCheckConfig      `yaml:"minimum"`
-	MinItems      MinCheckConfig      `yaml:"minItems"`
-	MinProperties MinCheckConfig      `yaml:"minProperties"`
-	MinLength     MinCheckConfig      `yaml:"minLength"`
-}
-
-type CheckConfig struct {
-	Enabled bool `json:"enabled"`
-}
-
-type EnumCheckConfig struct {
-	CheckConfig
-	RemovalEnforcement  property.EnumValidationRemovalEnforcement  `json:"removalEnforcement"`
-	AdditionEnforcement property.EnumValidationAdditionEnforcement `json:"additionEnforcement"`
-}
-
-type DefaultCheckConfig struct {
-	CheckConfig
-	ChangeEnforcement   property.DefaultValidationChangeEnforcement   `json:"changeEnforcement"`
-	RemovalEnforcement  property.DefaultValidationRemovalEnforcement  `json:"removalEnforcement"`
-	AdditionEnforcement property.DefaultValidationAdditionEnforcement `json:"additionEnforcement"`
-}
-
-type RequiredCheckConfig struct {
-	CheckConfig
-	NewEnforcement property.RequiredValidationNewEnforcement `json:"newEnforcement"`
-}
-
-type TypeCheckConfig struct {
-	CheckConfig
-	ChangeEnforcement property.TypeValidationChangeEnforcement `json:"changeEnforcement"`
-}
-
-type MaxCheckConfig struct {
-	CheckConfig
-	property.MaxOptions
-}
-
-type MinCheckConfig struct {
-	CheckConfig
-	property.MinOptions
-}
-
-func ValidatorForConfig(cfg Config) *crd.Validator {
-	validations := ValidationsForCRDChecks(cfg.Checks.CRD)
-	validations = append(validations, VersionValidationForVersionChecks(cfg.Checks.Version))
-	return crd.NewValidator(crd.WithValidations(validations...))
-}
-
-func ValidationsForCRDChecks(checks CRDChecks) []crd.Validation {
-	validations := []crd.Validation{}
-	if checks.Scope.Enabled {
-		validations = append(validations, &crd.Scope{})
+		err = yaml.Unmarshal(configBytes, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("unmarshalling config file %q contents: %v", configFile, err)
+		}
 	}
 
-	if checks.ExistingFieldRemoval.Enabled {
-		validations = append(validations, &crd.ExistingFieldRemoval{})
+	err := ValidateConfig(cfg)
+	if err != nil {
+		return nil, err
 	}
 
-	if checks.StoredVersionRemoval.Enabled {
-		validations = append(validations, &crd.StoredVersionRemoval{})
-	}
-
-	return validations
+	return cfg, nil
 }
 
-func VersionValidationForVersionChecks(checks VersionChecks) *version.Validator {
-	return version.NewValidator(
-		version.WithSameVersionConfig(
-			SameVersionConfigForSameVersionCheckConfig(checks.SameVersion),
-		),
-		version.WithServedVersionConfig(
-			ServedVersionConfigForServedVersionCheckConfig(checks.ServedVersion),
-		),
-	)
+// ValidateConfig ensures a valid Config object.
+// It will set defaults where appropriate and return an error
+// if user specified values are invalid.
+func ValidateConfig(cfg *Config) error {
+	if cfg == nil {
+		// nothing to validate
+		return nil
+	}
+	validationErr := ValidateValidations(cfg.Validations...)
+	unhandledEnforcementErr := ValidateEnforcementPolicy(&cfg.UnhandledEnforcement, false)
+	conversionErr := ValidateConversionPolicy(&cfg.Conversion)
+
+	return errors.Join(validationErr, unhandledEnforcementErr, conversionErr)
 }
 
-func SameVersionConfigForSameVersionCheckConfig(cfg SameVersionCheckConfig) version.SameVersionConfig {
-	svc := version.SameVersionConfig{
-		Skip:                 !cfg.Enabled,
-		UnhandledFailureMode: cfg.UnhandledFailureMode,
-		Validations:          PropertyValidationsForPropertyCheckConfig(cfg.PropertyCheckConfig),
+// ValidateConversionPolicy ensures the provided ConversionPolicy
+// is valid.
+// It will modify the ConversionPolicy to set it to the
+// default value of "None" if it is the empty string ("").
+// Returns an error if an invalid ConversionPolicy is specified.
+func ValidateConversionPolicy(policy *ConversionPolicy) error {
+	if policy == nil {
+		// nothing to validate
+		return nil
 	}
 
-	return svc
+	var err error
+	switch *policy {
+	case ConversionPolicyNone, ConversionPolicyIgnore:
+		// do nothing, valid values
+	case ConversionPolicy(""):
+		// default to None
+		*policy = ConversionPolicyNone
+	default:
+		err = fmt.Errorf("unknown conversion %q", *policy)
+	}
+
+	return err
 }
 
-func ServedVersionConfigForServedVersionCheckConfig(cfg ServedVersionCheckConfig) version.ServedVersionConfig {
-	svc := version.ServedVersionConfig{
-		Skip:                 !cfg.Enabled,
-		UnhandledFailureMode: cfg.UnhandledFailureMode,
-		Validations:          PropertyValidationsForPropertyCheckConfig(cfg.PropertyCheckConfig),
-		IgnoreConversion:     cfg.IgnoreConversion,
+// ValidateEnforcementPolicy ensures the provided EnforcementPolicy
+// is valid.
+// It will modify the EnforcementPolicy to set it to the
+// default value of "Error" if it is the empty string ("") and the EnforcementPolicy
+// is not required.
+// Returns an error if an invalid EnforcementPolicy is specified.
+func ValidateEnforcementPolicy(policy *EnforcementPolicy, required bool) error {
+	if policy == nil {
+		// nothing to validate
+		return nil
 	}
 
-	return svc
+	var err error
+	switch *policy {
+	case EnforcementPolicyError, EnforcementPolicyWarn, EnforcementPolicyNone:
+		// do nothing, valid values
+	case EnforcementPolicy(""):
+		if required {
+			err = fmt.Errorf("enforcement is required")
+			break
+		}
+		// default to error
+		*policy = EnforcementPolicyError
+	default:
+		err = fmt.Errorf("unknown enforcement %q", string(*policy))
+	}
+
+	return err
 }
 
-func PropertyValidationsForPropertyCheckConfig(cfg PropertyCheckConfig) []property.Validation {
-	validations := []property.Validation{}
-	if cfg.Enum.Enabled {
-		validations = append(validations, &property.Enum{
-			RemovalEnforcement:  cfg.Enum.RemovalEnforcement,
-			AdditionEnforcement: cfg.Enum.AdditionEnforcement,
-		})
+// ValidateValidations loops through the provided ValidationConfig
+// items to ensure they are valid.
+// Returns an aggregated error of the invalid ValidationConfig items.
+func ValidateValidations(validations ...ValidationConfig) error {
+	errs := []error{}
+	for i, validation := range validations {
+		if validation.Name == "" {
+			errs = append(errs, fmt.Errorf("validations[%d] is invalid: name is required", i))
+		}
+
+		errs = append(errs, ValidateEnforcementPolicy(&validation.Enforcement, true))
 	}
 
-	if cfg.Default.Enabled {
-		validations = append(validations, &property.Default{
-			ChangeEnforcement:   cfg.Default.ChangeEnforcement,
-			RemovalEnforcement:  cfg.Default.RemovalEnforcement,
-			AdditionEnforcement: cfg.Default.AdditionEnforcement,
-		})
-	}
-
-	if cfg.Required.Enabled {
-		validations = append(validations, &property.Required{
-			NewEnforcement: cfg.Required.NewEnforcement,
-		})
-	}
-
-	if cfg.Type.Enabled {
-		validations = append(validations, &property.Type{
-			ChangeEnforcement: cfg.Type.ChangeEnforcement,
-		})
-	}
-
-	if cfg.Maximum.Enabled {
-		validations = append(validations, &property.Maximum{
-			MaxOptions: cfg.Maximum.MaxOptions,
-		})
-	}
-
-	if cfg.MaxItems.Enabled {
-		validations = append(validations, &property.MaxItems{
-			MaxOptions: cfg.MaxItems.MaxOptions,
-		})
-	}
-
-	if cfg.MaxLength.Enabled {
-		validations = append(validations, &property.MaxLength{
-			MaxOptions: cfg.MaxLength.MaxOptions,
-		})
-	}
-
-	if cfg.MaxProperties.Enabled {
-		validations = append(validations, &property.MaxProperties{
-			MaxOptions: cfg.MaxProperties.MaxOptions,
-		})
-	}
-
-	if cfg.Minimum.Enabled {
-		validations = append(validations, &property.Minimum{
-			MinOptions: cfg.Minimum.MinOptions,
-		})
-	}
-
-	if cfg.MinItems.Enabled {
-		validations = append(validations, &property.MinItems{
-			MinOptions: cfg.MinItems.MinOptions,
-		})
-	}
-
-	if cfg.MinLength.Enabled {
-		validations = append(validations, &property.MinLength{
-			MinOptions: cfg.MinLength.MinOptions,
-		})
-	}
-
-	if cfg.MinProperties.Enabled {
-		validations = append(validations, &property.MinProperties{
-			MinOptions: cfg.MinProperties.MinOptions,
-		})
-	}
-
-	return validations
+	return errors.Join(errs...)
 }

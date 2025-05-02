@@ -1,0 +1,60 @@
+package validations
+
+import (
+	"fmt"
+
+	"github.com/everettraven/crd-diff/pkg/config"
+	"github.com/google/go-cmp/cmp"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+)
+
+// CompareVersions calculates the diff in the provided old and new CustomResourceDefinitionVersions and
+// compares the differing properties using the provided comparators.
+// An 'unhandled' comparator will be injected to evaluate any unhandled changes by the provided comparators
+// that will be enforced based on the provided unhandled enforcement policy.
+// Returns a map[string][]ComparisonResult, where the map key is the flattened property path (i.e ^.spec.foo.bar).
+func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, unhandledEnforcement config.EnforcementPolicy, comparators ...Comparator[apiextensionsv1.JSONSchemaProps]) map[string][]ComparisonResult {
+	oldFlattened := FlattenCRDVersion(old)
+	newFlattened := FlattenCRDVersion(new)
+
+	diffs := FlattenedCRDVersionDiff(oldFlattened, newFlattened)
+
+	result := map[string][]ComparisonResult{}
+	for property, diff := range diffs {
+		result[property] = CompareProperties(diff.Old, diff.New, unhandledEnforcement, comparators...)
+	}
+
+	return result
+}
+
+// CompareProperties compares the provided JSONSchemaProps using the provided comparators.
+// An 'unhandled' comparator will be injected to evaluate any unhandled changes by the provided
+// comparators that will be enforced based on the provided unhandled enforcement policy.
+// Returns a slice containing all the comparison results.
+func CompareProperties(a, b *apiextensionsv1.JSONSchemaProps, unhandledEnforcement config.EnforcementPolicy, comparators ...Comparator[apiextensionsv1.JSONSchemaProps]) []ComparisonResult {
+	result := []ComparisonResult{}
+	aCopy, bCopy := a.DeepCopy(), b.DeepCopy()
+	for _, comparator := range comparators {
+		comparisonResult := comparator.Compare(aCopy, bCopy)
+		result = append(result, comparisonResult)
+	}
+
+	// checking for unhandled changes is _always_ performed last.
+	result = append(result, checkUnhandled(aCopy, bCopy, unhandledEnforcement))
+
+	return result
+}
+
+// checkUnhandled is a utility function for checking if a provided set of comparators
+// handled validating all differences between the JSONSchemaProps.
+// It returns a ComparisonResult so that the results are treated generically just like a standard Comparator.
+func checkUnhandled(a, b *apiextensionsv1.JSONSchemaProps, enforcement config.EnforcementPolicy) ComparisonResult {
+	var err error
+	if !equality.Semantic.DeepEqual(a, b) {
+		diff := cmp.Diff(a, b)
+		err = fmt.Errorf("unhandled change(s) found - diff: %s", diff)
+	}
+
+	return HandleErrors("unhandled", enforcement, err)
+}
