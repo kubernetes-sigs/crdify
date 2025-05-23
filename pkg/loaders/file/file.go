@@ -1,3 +1,17 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package file
 
 import (
@@ -41,6 +55,7 @@ func (f *File) Load(_ context.Context, location *url.URL) (*apiextensionsv1.Cust
 	if err != nil {
 		return nil, fmt.Errorf("opening file %q: %w", filePath, err)
 	}
+	//nolint:errcheck
 	defer file.Close()
 
 	fileBytes, err := io.ReadAll(file)
@@ -49,6 +64,7 @@ func (f *File) Load(_ context.Context, location *url.URL) (*apiextensionsv1.Cust
 	}
 
 	crd := &apiextensionsv1.CustomResourceDefinition{}
+
 	err = yaml.Unmarshal(fileBytes, crd)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling contents of file %q: %w", filePath, err)

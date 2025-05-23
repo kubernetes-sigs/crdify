@@ -1,3 +1,17 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package validations
 
 import (
@@ -12,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-// GetCRDVersionByName returns a CustomResourceDefinitionVersion with the provided name from the provided CustomResourceDefinition
+// GetCRDVersionByName returns a CustomResourceDefinitionVersion with the provided name from the provided CustomResourceDefinition.
 func GetCRDVersionByName(crd *apiextensionsv1.CustomResourceDefinition, name string) *apiextensionsv1.CustomResourceDefinitionVersion {
 	if crd == nil {
 		return nil
@@ -28,7 +42,7 @@ func GetCRDVersionByName(crd *apiextensionsv1.CustomResourceDefinition, name str
 }
 
 // FlattenCRDVersion flattens the provided CustomResourceDefinition into a mapping of
-// property path (i.e ^.spec.foo.bar) to its JSONSchemaProps
+// property path (i.e ^.spec.foo.bar) to its JSONSchemaProps.
 func FlattenCRDVersion(crdVersion apiextensionsv1.CustomResourceDefinitionVersion) map[string]*apiextensionsv1.JSONSchemaProps {
 	flatMap := map[string]*apiextensionsv1.JSONSchemaProps{}
 
@@ -41,10 +55,11 @@ func FlattenCRDVersion(crdVersion apiextensionsv1.CustomResourceDefinitionVersio
 			return false
 		},
 	)
+
 	return flatMap
 }
 
-// Diff is a utility struct for holding an old and new JSONSchemaProps
+// Diff is a utility struct for holding an old and new JSONSchemaProps.
 type Diff struct {
 	Old *apiextensionsv1.JSONSchemaProps
 	New *apiextensionsv1.JSONSchemaProps
@@ -52,10 +67,11 @@ type Diff struct {
 
 // FlattenedCRDVersionDiff calculates differences between flattened CRD versions.
 // Returns the set of differing properties as a map of the property path (i.e ^.spec.foo.bar)
-// to the Diff (old and new JSONSchemaProps)
-func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProps) map[string]Diff {
+// to the Diff (old and new JSONSchemaProps).
+func FlattenedCRDVersionDiff(a, b map[string]*apiextensionsv1.JSONSchemaProps) map[string]Diff {
 	diffMap := map[string]Diff{}
-	for prop, oldSchema := range old {
+
+	for prop, oldSchema := range a {
 		// Create a copy of the old schema and set the properties to nil.
 		// In theory this will make it so we don't provide a diff for a parent property
 		// based on changes to the children properties. The changes to the children
@@ -63,7 +79,7 @@ func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProp
 		// map of all the properties for the CRD version
 		oldSchemaCopy := oldSchema.DeepCopy()
 		oldSchemaCopy.Properties = nil
-		newSchema, ok := new[prop]
+		newSchema, ok := b[prop]
 
 		// In the event the property no longer exists on the new version
 		// create a diff entry with the new value being empty
@@ -87,7 +103,7 @@ func FlattenedCRDVersionDiff(old, new map[string]*apiextensionsv1.JSONSchemaProp
 }
 
 // SchemaWalkerFunc is a function that walks a JSONSchemaProps.
-// ancestry is an order list of ancestors of s, where index 0 is the root and index len-1 is the direct parent
+// ancestry is an order list of ancestors of s, where index 0 is the root and index len-1 is the direct parent.
 type SchemaWalkerFunc func(s *apiextensionsv1.JSONSchemaProps, fldPath, simpleLocation *field.Path, ancestry []*apiextensionsv1.JSONSchemaProps) bool
 
 // SchemaHas recursively traverses the Schema and calls the `pred`
@@ -95,6 +111,8 @@ type SchemaWalkerFunc func(s *apiextensionsv1.JSONSchemaProps, fldPath, simpleLo
 //
 // The predicate MUST NOT keep a copy of the json schema NOR modify the
 // schema.
+//
+//nolint:gocognit,cyclop
 func SchemaHas(s *apiextensionsv1.JSONSchemaProps, fldPath, simpleLocation *field.Path, ancestry []*apiextensionsv1.JSONSchemaProps, pred SchemaWalkerFunc) bool {
 	if s == nil {
 		return false
@@ -104,61 +122,73 @@ func SchemaHas(s *apiextensionsv1.JSONSchemaProps, fldPath, simpleLocation *fiel
 		return true
 	}
 
+	//nolint:gocritic
 	nextAncestry := append(ancestry, s)
 
 	if s.Items != nil {
 		if s.Items != nil && schemaHasRecurse(s.Items.Schema, fldPath.Child("items"), simpleLocation.Key("*"), nextAncestry, pred) {
 			return true
 		}
+
 		for i := range s.Items.JSONSchemas {
 			if schemaHasRecurse(&s.Items.JSONSchemas[i], fldPath.Child("items", "jsonSchemas").Index(i), simpleLocation.Index(i), nextAncestry, pred) {
 				return true
 			}
 		}
 	}
+
 	for i := range s.AllOf {
 		if schemaHasRecurse(&s.AllOf[i], fldPath.Child("allOf").Index(i), simpleLocation, nextAncestry, pred) {
 			return true
 		}
 	}
+
 	for i := range s.AnyOf {
 		if schemaHasRecurse(&s.AnyOf[i], fldPath.Child("anyOf").Index(i), simpleLocation, nextAncestry, pred) {
 			return true
 		}
 	}
+
 	for i := range s.OneOf {
 		if schemaHasRecurse(&s.OneOf[i], fldPath.Child("oneOf").Index(i), simpleLocation, nextAncestry, pred) {
 			return true
 		}
 	}
+
 	if schemaHasRecurse(s.Not, fldPath.Child("not"), simpleLocation, nextAncestry, pred) {
 		return true
 	}
+
 	for propertyName, s := range s.Properties {
 		if schemaHasRecurse(&s, fldPath.Child("properties").Key(propertyName), simpleLocation.Child(propertyName), nextAncestry, pred) {
 			return true
 		}
 	}
+
 	if s.AdditionalProperties != nil {
 		if schemaHasRecurse(s.AdditionalProperties.Schema, fldPath.Child("additionalProperties", "schema"), simpleLocation.Key("*"), nextAncestry, pred) {
 			return true
 		}
 	}
+
 	for patternName, s := range s.PatternProperties {
 		if schemaHasRecurse(&s, fldPath.Child("allOf").Key(patternName), simpleLocation, nextAncestry, pred) {
 			return true
 		}
 	}
+
 	if s.AdditionalItems != nil {
 		if schemaHasRecurse(s.AdditionalItems.Schema, fldPath.Child("additionalItems", "schema"), simpleLocation, nextAncestry, pred) {
 			return true
 		}
 	}
+
 	for _, s := range s.Definitions {
 		if schemaHasRecurse(&s, fldPath.Child("definitions"), simpleLocation, nextAncestry, pred) {
 			return true
 		}
 	}
+
 	for dependencyName, d := range s.Dependencies {
 		if schemaHasRecurse(d.Schema, fldPath.Child("dependencies").Key(dependencyName).Child("schema"), simpleLocation, nextAncestry, pred) {
 			return true
@@ -168,6 +198,7 @@ func SchemaHas(s *apiextensionsv1.JSONSchemaProps, fldPath, simpleLocation *fiel
 	return false
 }
 
+//nolint:gochecknoglobals
 var schemaPool = sync.Pool{
 	New: func() any {
 		return new(apiextensionsv1.JSONSchemaProps)
@@ -178,15 +209,22 @@ func schemaHasRecurse(s *apiextensionsv1.JSONSchemaProps, fldPath, simpleLocatio
 	if s == nil {
 		return false
 	}
-	schema := schemaPool.Get().(*apiextensionsv1.JSONSchemaProps)
+
+	schema, ok := schemaPool.Get().(*apiextensionsv1.JSONSchemaProps)
+	if !ok {
+		return false
+	}
 	defer schemaPool.Put(schema)
+
 	*schema = *s
+
 	return SchemaHas(schema, fldPath, simpleLocation, ancestry, pred)
 }
 
-// ComparatorsForValidations extracts the Comparators of type T from the provided set of Validations
+// ComparatorsForValidations extracts the Comparators of type T from the provided set of Validations.
 func ComparatorsForValidations[T Comparable](vals ...Validation) []Comparator[T] {
 	comparators := []Comparator[T]{}
+
 	for _, val := range vals {
 		comp, ok := val.(Comparator[T])
 		if !ok {
@@ -206,6 +244,7 @@ func ComparatorsForValidations[T Comparable](vals ...Validation) []Comparator[T]
 func LoadValidationsFromRegistry(registry Registry) (map[string]Validation, error) {
 	vals := map[string]Validation{}
 	errs := []error{}
+
 	for _, validation := range registry.Registered() {
 		val, err := registry.Validation(validation, make(map[string]interface{}))
 		if err != nil {
@@ -216,6 +255,7 @@ func LoadValidationsFromRegistry(registry Registry) (map[string]Validation, erro
 
 		vals[validation] = val
 	}
+
 	return vals, errors.Join(errs...)
 }
 
@@ -227,6 +267,7 @@ func LoadValidationsFromRegistry(registry Registry) (map[string]Validation, erro
 func ConfigureValidations(validations map[string]Validation, registry Registry, cfg config.Config) (map[string]Validation, error) {
 	modified := validations
 	errs := []error{}
+
 	for _, validation := range cfg.Validations {
 		val, err := registry.Validation(validation.Name, validation.Configuration)
 		if err != nil {
@@ -238,7 +279,7 @@ func ConfigureValidations(validations map[string]Validation, registry Registry, 
 		case config.EnforcementPolicyError, config.EnforcementPolicyWarn, config.EnforcementPolicyNone:
 			val.SetEnforcement(validation.Enforcement)
 		default:
-			errs = append(errs, fmt.Errorf("configuring validation %q: unknown enforcement policy %q", validation.Name, validation.Enforcement))
+			errs = append(errs, fmt.Errorf("configuring validation %q: %w : %q", validation.Name, errUnknownEnforcementPolicy, validation.Enforcement))
 		}
 
 		modified[validation.Name] = val
@@ -247,12 +288,15 @@ func ConfigureValidations(validations map[string]Validation, registry Registry, 
 	return modified, errors.Join(errs...)
 }
 
+var errUnknownEnforcementPolicy = errors.New("unknown enforcement policy")
+
 // HandleErrors is a utility function for Comparators to generate a ComparisonResult
 // based on the provided Comparator name, enforcement policy, and any errors it encountered.
 func HandleErrors(name string, policy config.EnforcementPolicy, errs ...error) ComparisonResult {
 	result := ComparisonResult{
 		Name: name,
 	}
+
 	switch policy {
 	case config.EnforcementPolicyError:
 		if errors.Join(errs...) != nil {
@@ -262,6 +306,8 @@ func HandleErrors(name string, policy config.EnforcementPolicy, errs ...error) C
 		if errors.Join(errs...) != nil {
 			result.Warnings = slices.Translate(func(err error) string { return err.Error() }, errs...)
 		}
+	case config.EnforcementPolicyNone:
+		return result
 	}
 
 	return result

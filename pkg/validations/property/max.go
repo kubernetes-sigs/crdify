@@ -1,7 +1,23 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//nolint:dupl
 package property
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 
 	"github.com/everettraven/crd-diff/pkg/config"
@@ -19,17 +35,26 @@ type MaxOptions struct {
 // MaxVerification is a generic helper function for comparing
 // two cmp.Ordered values. It returns an error if:
 // - older value is nil and newer value is not nil
-// - older and newer values are not nil, newer is less than older
+// - older and newer values are not nil, newer is less than older.
 func MaxVerification[T cmp.Ordered](older, newer *T) error {
 	var err error
+
 	switch {
 	case older == nil && newer != nil:
-		err = fmt.Errorf("constraint %v added when there were no restrictions previously", *newer)
+		err = fmt.Errorf("%w : %v", ErrNetNewMaximumConstraint, *newer)
 	case older != nil && newer != nil && *newer < *older:
-		err = fmt.Errorf("constraint decreased from %v to %v", *older, *newer)
+		err = fmt.Errorf("%w : %v -> %v", ErrMaximumIncreased, *older, *newer)
 	}
+
 	return err
 }
+
+var (
+	// ErrNetNewMaximumConstraint represents an error state where a net new maximum constraint was added to a property.
+	ErrNetNewMaximumConstraint = errors.New("maximum constraint added when there was none previously")
+	// ErrMaximumIncreased represents an error state where a maximum constaint on a property was decreased.
+	ErrMaximumIncreased = errors.New("maximum decreased")
+)
 
 var (
 	_ validations.Validation                                  = (*Maximum)(nil)
@@ -39,7 +64,7 @@ var (
 const maximumValidationName = "maximum"
 
 // RegisterMaximum registers the Maximum validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMaximum(registry validations.Registry) {
 	registry.Register(maximumValidationName, maximumFactory)
 }
@@ -51,17 +76,17 @@ func maximumFactory(_ map[string]interface{}) (validations.Validation, error) {
 }
 
 // Maximum is a Validation that can be used to identify
-// incompatible changes to the maximum constraints of CRD properties
+// incompatible changes to the maximum constraints of CRD properties.
 type Maximum struct {
 	MaxOptions
 }
 
-// Name returns the name of the Maximum validation
+// Name returns the name of the Maximum validation.
 func (m *Maximum) Name() string {
 	return maximumValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the Maximum validation
+// SetEnforcement sets the EnforcementPolicy for the Maximum validation.
 func (m *Maximum) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }
@@ -88,7 +113,7 @@ var (
 const maxItemsValidationName = "maxItems"
 
 // RegisterMaxItems registers the MaxItems validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMaxItems(registry validations.Registry) {
 	registry.Register(maxItemsValidationName, maxItemsFactory)
 }
@@ -100,17 +125,17 @@ func maxItemsFactory(_ map[string]interface{}) (validations.Validation, error) {
 }
 
 // MaxItems is a Validation that can be used to identify
-// incompatible changes to the maxItems constraints of CRD properties
+// incompatible changes to the maxItems constraints of CRD properties.
 type MaxItems struct {
 	MaxOptions
 }
 
-// Name returns the name of the MaxItems validation
+// Name returns the name of the MaxItems validation.
 func (m *MaxItems) Name() string {
 	return maxItemsValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the MaxItems validation
+// SetEnforcement sets the EnforcementPolicy for the MaxItems validation.
 func (m *MaxItems) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }
@@ -137,7 +162,7 @@ var (
 const maxLengthValidationName = "maxLength"
 
 // RegisterMaxLength registers the MaxLength validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMaxLength(registry validations.Registry) {
 	registry.Register(maxLengthValidationName, maxLengthFactory)
 }
@@ -149,17 +174,17 @@ func maxLengthFactory(_ map[string]interface{}) (validations.Validation, error) 
 }
 
 // MaxLength is a Validation that can be used to identify
-// incompatible changes to the maxLength constraints of CRD properties
+// incompatible changes to the maxLength constraints of CRD properties.
 type MaxLength struct {
 	MaxOptions
 }
 
-// Name returns the name of the MaxLength validation
+// Name returns the name of the MaxLength validation.
 func (m *MaxLength) Name() string {
 	return maxLengthValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the MaxLength validation
+// SetEnforcement sets the EnforcementPolicy for the MaxLength validation.
 func (m *MaxLength) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }
@@ -186,7 +211,7 @@ var (
 const maxPropertiesValidationName = "maxProperties"
 
 // RegisterMaxProperties registers the MaxProperties validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMaxProperties(registry validations.Registry) {
 	registry.Register(maxPropertiesValidationName, maxPropertiesFactory)
 }
@@ -198,17 +223,17 @@ func maxPropertiesFactory(_ map[string]interface{}) (validations.Validation, err
 }
 
 // MaxProperties is a Validation that can be used to identify
-// incompatible changes to the maxProperties constraints of CRD properties
+// incompatible changes to the maxProperties constraints of CRD properties.
 type MaxProperties struct {
 	MaxOptions
 }
 
-// Name returns the name of the MaxProperties validation
+// Name returns the name of the MaxProperties validation.
 func (m *MaxProperties) Name() string {
 	return maxPropertiesValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the MaxProperties validation
+// SetEnforcement sets the EnforcementPolicy for the MaxProperties validation.
 func (m *MaxProperties) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }

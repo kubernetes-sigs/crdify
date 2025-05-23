@@ -1,3 +1,17 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package testing
 
 import (
@@ -8,15 +22,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// ComparableValidation is a generic interface that represents
+// a validation that can perform comparisons for the provided
+// validations.Comparable.
 type ComparableValidation[T validations.Comparable] interface {
 	validations.Validation
 	validations.Comparator[T]
 }
 
-type DeepCopyableComparable[T validations.Comparable] interface {
-	DeepCopy() *T
-}
-
+// Testcase defines a single test case for a comparable validation.
 type Testcase[T validations.Comparable] struct {
 	Name                 string
 	Old                  *T
@@ -25,6 +39,7 @@ type Testcase[T validations.Comparable] struct {
 	ComparableValidation ComparableValidation[T]
 }
 
+// RunTestcases runs the provided set of test cases for the comparable validation.
 func RunTestcases[T validations.Comparable](t *testing.T, testcases ...Testcase[T]) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
@@ -32,24 +47,24 @@ func RunTestcases[T validations.Comparable](t *testing.T, testcases ...Testcase[
 
 			t.Log("with enforcement policy error")
 			val.SetEnforcement(config.EnforcementPolicyError)
-			result := val.Compare(copy(testcase.Old), copy(testcase.New))
+			result := val.Compare(copyComparable(testcase.Old), copyComparable(testcase.New))
 			assert.Equal(t, testcase.Flagged, len(result.Errors) > 0, "unexpected state", "result errors", result.Errors)
 
 			t.Log("with enforcement policy warn")
 			val.SetEnforcement(config.EnforcementPolicyWarn)
-			result = val.Compare(copy(testcase.Old), copy(testcase.New))
+			result = val.Compare(copyComparable(testcase.Old), copyComparable(testcase.New))
 			assert.Equal(t, testcase.Flagged, len(result.Warnings) > 0, "unexpected state", "result warnings", result.Warnings)
 
 			t.Log("with enforcement policy none")
 			val.SetEnforcement(config.EnforcementPolicyNone)
-			result = val.Compare(copy(testcase.Old), copy(testcase.New))
+			result = val.Compare(copyComparable(testcase.Old), copyComparable(testcase.New))
 			assert.True(t, len(result.Errors) == 0, "unexpected state", "result errors", result.Errors)
 			assert.True(t, len(result.Warnings) == 0, "unexpected state", "result warnings", result.Warnings)
 		})
 	}
 }
 
-func copy[T validations.Comparable](in *T) *T {
+func copyComparable[T validations.Comparable](in *T) *T {
 	cIn := *in
 	return &cIn
 }

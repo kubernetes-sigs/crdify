@@ -1,7 +1,23 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//nolint:dupl
 package property
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 
 	"github.com/everettraven/crd-diff/pkg/config"
@@ -19,17 +35,26 @@ type MinOptions struct {
 // MinVerification is a generic helper function for comparing
 // two cmp.Ordered values. It returns an error if:
 // - older value is nil and newer value is not nil
-// - older and newer values are not nil, newer is greater than older
+// - older and newer values are not nil, newer is greater than older.
 func MinVerification[T cmp.Ordered](older, newer *T) error {
 	var err error
+
 	switch {
 	case older == nil && newer != nil:
-		err = fmt.Errorf("constraint %v added when there were no restrictions previously", *newer)
+		err = fmt.Errorf("%w : %v", ErrNetNewMinimumConstraint, *newer)
 	case older != nil && newer != nil && *newer > *older:
-		err = fmt.Errorf("constraint increased from %v to %v", *older, *newer)
+		err = fmt.Errorf("%w : %v -> %v", ErrMinimumIncreased, *older, *newer)
 	}
+
 	return err
 }
+
+var (
+	// ErrNetNewMinimumConstraint represents an error state where a net new minimum constraint was added to a property.
+	ErrNetNewMinimumConstraint = errors.New("minimum constraint added when there was none previously")
+	// ErrMinimumIncreased represents an error state where a minimum constaint on a property was increased.
+	ErrMinimumIncreased = errors.New("minimum increased")
+)
 
 var (
 	_ validations.Validation                                  = (*Minimum)(nil)
@@ -39,7 +64,7 @@ var (
 const minimumValidationName = "minimum"
 
 // RegisterMinimum registers the Minimum validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMinimum(registry validations.Registry) {
 	registry.Register(minimumValidationName, minimumFactory)
 }
@@ -51,17 +76,17 @@ func minimumFactory(_ map[string]interface{}) (validations.Validation, error) {
 }
 
 // Minimum is a Validation that can be used to identify
-// incompatible changes to the minimum constraints of CRD properties
+// incompatible changes to the minimum constraints of CRD properties.
 type Minimum struct {
 	MinOptions
 }
 
-// Name returns the name of the Minimum validation
+// Name returns the name of the Minimum validation.
 func (m *Minimum) Name() string {
 	return minimumValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the Minimum validation
+// SetEnforcement sets the EnforcementPolicy for the Minimum validation.
 func (m *Minimum) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }
@@ -88,7 +113,7 @@ var (
 const minItemsValidationName = "minItems"
 
 // RegisterMinItems registers the MinItems validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMinItems(registry validations.Registry) {
 	registry.Register(minItemsValidationName, minItemsFactory)
 }
@@ -100,17 +125,17 @@ func minItemsFactory(_ map[string]interface{}) (validations.Validation, error) {
 }
 
 // MinItems is a Validation that can be used to identify
-// incompatible changes to the minItems constraints of CRD properties
+// incompatible changes to the minItems constraints of CRD properties.
 type MinItems struct {
 	MinOptions
 }
 
-// Name returns the name of the MinItems validation
+// Name returns the name of the MinItems validation.
 func (m *MinItems) Name() string {
 	return minItemsValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the MinItems validation
+// SetEnforcement sets the EnforcementPolicy for the MinItems validation.
 func (m *MinItems) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }
@@ -137,7 +162,7 @@ var (
 const minLengthValidationName = "minLength"
 
 // RegisterMinLength registers the MinLength validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMinLength(registry validations.Registry) {
 	registry.Register(minLengthValidationName, minLengthFactory)
 }
@@ -149,17 +174,17 @@ func minLengthFactory(_ map[string]interface{}) (validations.Validation, error) 
 }
 
 // MinLength is a Validation that can be used to identify
-// incompatible changes to the minLength constraints of CRD properties
+// incompatible changes to the minLength constraints of CRD properties.
 type MinLength struct {
 	MinOptions
 }
 
-// Name returns the name of the MinLength validation
+// Name returns the name of the MinLength validation.
 func (m *MinLength) Name() string {
 	return minLengthValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the MinLength validation
+// SetEnforcement sets the EnforcementPolicy for the MinLength validation.
 func (m *MinLength) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }
@@ -186,7 +211,7 @@ var (
 const minPropertiesValidationName = "minProperties"
 
 // RegisterMinProperties registers the MinProperties validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterMinProperties(registry validations.Registry) {
 	registry.Register(minPropertiesValidationName, minPropertiesFactory)
 }
@@ -198,17 +223,17 @@ func minPropertiesFactory(_ map[string]interface{}) (validations.Validation, err
 }
 
 // MinProperties is a Validation that can be used to identify
-// incompatible changes to the minProperties constraints of CRD properties
+// incompatible changes to the minProperties constraints of CRD properties.
 type MinProperties struct {
 	MinOptions
 }
 
-// Name returns the name of the MinProperties validation
+// Name returns the name of the MinProperties validation.
 func (m *MinProperties) Name() string {
 	return minPropertiesValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the MinProperties validation
+// SetEnforcement sets the EnforcementPolicy for the MinProperties validation.
 func (m *MinProperties) SetEnforcement(policy config.EnforcementPolicy) {
 	m.enforcement = policy
 }
