@@ -3,10 +3,14 @@
 SHELL := /usr/bin/env bash -o pipefail
 .SHELLFLAGS := -ec
 
-include .bingo/Variables.mk
+# Tool definitions
+GOLANGCI_LINT := go tool -modfile tools/go.mod github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT)
+lint: golangci-lint
+
+.PHONY: golangci-lint
+golangci-lint:
 	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_ARGS)
 
 .PHONY: unit
