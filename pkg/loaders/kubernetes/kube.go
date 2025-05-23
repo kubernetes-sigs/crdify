@@ -1,3 +1,17 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package kubernetes
 
 import (
@@ -14,10 +28,10 @@ import (
 )
 
 // KubeConfigFunc is a function with no input parameters that returns a rest.Config
-// for building a client to interact with a Kubernetes cluster or an error
+// for building a client to interact with a Kubernetes cluster or an error.
 type KubeConfigFunc func() (*rest.Config, error)
 
-// Kubernetes is a Loader implementation for sourcing a CustomResourceDefinition from a Kubernetes cluster
+// Kubernetes is a Loader implementation for sourcing a CustomResourceDefinition from a Kubernetes cluster.
 type Kubernetes struct {
 	// cfgFunc is a function to source the rest.Config for building
 	// a client for fetching a CustomResourceDefinition from a Kubernetes cluster.
@@ -28,7 +42,7 @@ type Kubernetes struct {
 
 // New returns a new instance of a Kubernetes Loader, configured with
 // the provided function for loading a Kubeconfig for interacting with a
-// Kubernetes cluster
+// Kubernetes cluster.
 func New(cfgFunc KubeConfigFunc) *Kubernetes {
 	return &Kubernetes{
 		cfgFunc: cfgFunc,
@@ -36,7 +50,7 @@ func New(cfgFunc KubeConfigFunc) *Kubernetes {
 }
 
 // Load loads a CustomResourceDefinition from a Kubernetes cluster using the same configurations as tools like
-// kubectl. It uses the hostname of the provided URL as the name of the CustomResourceDefinition to fetch from the cluster
+// kubectl. It uses the hostname of the provided URL as the name of the CustomResourceDefinition to fetch from the cluster.
 func (k *Kubernetes) Load(ctx context.Context, location *url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
 	cfg, err := k.cfgFunc()
 	if err != nil {
@@ -47,6 +61,7 @@ func (k *Kubernetes) Load(ctx context.Context, location *url.URL) (*apiextension
 	if err != nil {
 		return nil, fmt.Errorf("creating CustomResourceDefinition client: %w", err)
 	}
+
 	crdClient := apiextensionsClient.CustomResourceDefinitions()
 
 	err = ValidateHostname(location.Hostname())
@@ -54,22 +69,36 @@ func (k *Kubernetes) Load(ctx context.Context, location *url.URL) (*apiextension
 		return nil, fmt.Errorf("validating hostname: %w", err)
 	}
 
-	return crdClient.Get(ctx, location.Hostname(), v1.GetOptions{})
+	crd, err := crdClient.Get(ctx, location.Hostname(), v1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("getting CustomResourceDefinition: %w", err)
+	}
+
+	return crd, nil
 }
 
+// ValidateHostname validates that the provided hostname of a URL
+// is a valid RFC1123 DNS Subdomain name, which is what valid
+// CustomResourceDefinition resource names must follow.
 func ValidateHostname(hostname string) error {
 	if hostname == "" {
-		return errors.New("hostname is empty. The hostname should be the name of the CustomResourceDefinition to load.")
+		return errEmptyHostname
 	}
 
 	if errs := validation.IsDNS1123Subdomain(hostname); len(errs) > 0 {
 		actualErrs := []error{}
+
 		for _, errString := range errs {
+			//nolint:err113
 			actualErrs = append(actualErrs, errors.New(errString))
 		}
+
 		err := errors.Join(actualErrs...)
+
 		return fmt.Errorf("hostname %q is not a valid CustomResourceDefinition name: %w . CustomResourceDefinition names are required to be valid DNS Subdomains as outlined in https://tools.ietf.org/html/rfc1123", hostname, err)
 	}
 
 	return nil
 }
+
+var errEmptyHostname = errors.New("hostname is empty - the hostname should be the name of the CustomResourceDefinition to load")

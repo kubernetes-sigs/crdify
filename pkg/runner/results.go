@@ -1,7 +1,22 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package runner
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -29,20 +44,20 @@ type Results struct {
 	ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
 }
 
-// Format is a representation of an output format
+// Format is a representation of an output format.
 type Format string
 
 const (
-	// FormatJSON represents a JSON output format
+	// FormatJSON represents a JSON output format.
 	FormatJSON Format = "json"
 
-	// FormatYAML represents a YAML output format
+	// FormatYAML represents a YAML output format.
 	FormatYAML Format = "yaml"
 
-	// FormatPlainText represents a PlainText output format
+	// FormatPlainText represents a PlainText output format.
 	FormatPlainText Format = "plaintext"
 
-	// FormatMarkdown represents a Markdown output format
+	// FormatMarkdown represents a Markdown output format.
 	FormatMarkdown Format = "markdown"
 )
 
@@ -61,26 +76,32 @@ func (rr *Results) Render(format Format) (string, error) {
 	case FormatPlainText:
 		return rr.RenderPlainText(), nil
 	default:
-		return "", fmt.Errorf("unknown rendering format %q", format)
+		return "", fmt.Errorf("%w : %q", errUnknownRenderFormat, format)
 	}
 }
 
-// RenderJSON returns a string of the results rendered in JSON or an error
+var errUnknownRenderFormat = errors.New("unknown render format")
+
+// RenderJSON returns a string of the results rendered in JSON or an error.
 func (rr *Results) RenderJSON() (string, error) {
 	outBytes, err := json.Marshal(rr)
 	return string(outBytes), err
 }
 
-// RenderYAML returns a string of the results rendered in YAML or an error
+// RenderYAML returns a string of the results rendered in YAML or an error.
 func (rr *Results) RenderYAML() (string, error) {
 	outBytes, err := yaml.Marshal(rr)
 	return string(outBytes), err
 }
 
 // RenderMarkdown returns a string of the results rendered as Markdown
-func (rr *Results) RenderMarkdown() string {
+//
+//nolint:dupl
+func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 	var out strings.Builder
+
 	out.WriteString("# CRD Validations\n")
+
 	for _, result := range rr.CRDValidation {
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
@@ -100,8 +121,8 @@ func (rr *Results) RenderMarkdown() string {
 	}
 
 	out.WriteString("\n\n")
-
 	out.WriteString("# Same Version Validations\n")
+
 	for version, result := range rr.SameVersionValidation {
 		for property, results := range result {
 			for _, propertyResult := range results {
@@ -125,8 +146,8 @@ func (rr *Results) RenderMarkdown() string {
 	}
 
 	out.WriteString("\n\n")
-
 	out.WriteString("# Served Version Validations\n")
+
 	for version, result := range rr.ServedVersionValidation {
 		for property, results := range result {
 			for _, propertyResult := range results {
@@ -153,9 +174,13 @@ func (rr *Results) RenderMarkdown() string {
 }
 
 // RenderPlainText returns a string of the results rendered as PlainText
-func (rr *Results) RenderPlainText() string {
+//
+//nolint:dupl
+func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 	var out strings.Builder
+
 	out.WriteString("CRD Validations\n")
+
 	for _, result := range rr.CRDValidation {
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
@@ -175,8 +200,8 @@ func (rr *Results) RenderPlainText() string {
 	}
 
 	out.WriteString("\n\n")
-
 	out.WriteString("Same Version Validations\n")
+
 	for version, result := range rr.SameVersionValidation {
 		for property, results := range result {
 			for _, propertyResult := range results {
@@ -200,8 +225,8 @@ func (rr *Results) RenderPlainText() string {
 	}
 
 	out.WriteString("\n\n")
-
 	out.WriteString("Served Version Validations\n")
+
 	for version, result := range rr.ServedVersionValidation {
 		for property, results := range result {
 			for _, propertyResult := range results {
@@ -227,12 +252,12 @@ func (rr *Results) RenderPlainText() string {
 	return out.String()
 }
 
-// HasFailures returns a boolean signaling if any of the validation results contain any errors
+// HasFailures returns a boolean signaling if any of the validation results contain any errors.
 func (rr *Results) HasFailures() bool {
 	return rr.HasCRDValidationFailures() || rr.HasSameVersionValidationFailures() || rr.HasServedVersionValidationFailures()
 }
 
-// HasCRDValidationFailures returns a boolean signaling if the CRD scoped validations contain any errors
+// HasCRDValidationFailures returns a boolean signaling if the CRD scoped validations contain any errors.
 func (rr *Results) HasCRDValidationFailures() bool {
 	for _, result := range rr.CRDValidation {
 		if len(result.Errors) > 0 {
@@ -243,7 +268,7 @@ func (rr *Results) HasCRDValidationFailures() bool {
 	return false
 }
 
-// HasSameVersionValidationFailures returns a boolean signaling if the same version validations contain any errors
+// HasSameVersionValidationFailures returns a boolean signaling if the same version validations contain any errors.
 func (rr *Results) HasSameVersionValidationFailures() bool {
 	for _, versionResults := range rr.SameVersionValidation {
 		for _, propertyResults := range versionResults {
@@ -254,10 +279,11 @@ func (rr *Results) HasSameVersionValidationFailures() bool {
 			}
 		}
 	}
+
 	return false
 }
 
-// HasServedVersionValidationFailures returns a boolean signaling if the served version validations contain any errors
+// HasServedVersionValidationFailures returns a boolean signaling if the served version validations contain any errors.
 func (rr *Results) HasServedVersionValidationFailures() bool {
 	for _, versionResults := range rr.ServedVersionValidation {
 		for _, propertyResults := range versionResults {
@@ -268,5 +294,6 @@ func (rr *Results) HasServedVersionValidationFailures() bool {
 			}
 		}
 	}
+
 	return false
 }

@@ -1,3 +1,17 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package git
 
 import (
@@ -16,7 +30,7 @@ import (
 // from a git repository.
 type Git struct{}
 
-// New returns a new instance of the Git Loader
+// New returns a new instance of the Git Loader.
 func New() *Git {
 	return &Git{}
 }
@@ -27,12 +41,14 @@ func New() *Git {
 // main branch of the git repository using the file 'foo/bar/file.yaml'.
 func (g *Git) Load(_ context.Context, location *url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
 	filePath := location.Query().Get("path")
+
 	repo, err := gogit.PlainOpen("")
 	if err != nil {
 		return nil, fmt.Errorf("opening repository: %w", err)
 	}
 
 	rev := plumbing.Revision(location.Hostname())
+
 	hash, err := repo.ResolveRevision(rev)
 	if err != nil {
 		return nil, fmt.Errorf("calculating hash for revision %q: %w", rev, err)
@@ -68,6 +84,7 @@ func LoadCRDFileFromRepositoryWithRef(repo *gogit.Repository, ref *plumbing.Hash
 	if err != nil {
 		return nil, fmt.Errorf("getting reader for blob for file %q from repo with ref %v: %w", filename, commit.TreeHash, err)
 	}
+	//nolint:errcheck
 	defer reader.Close()
 
 	crdBytes, err := io.ReadAll(reader)
@@ -76,6 +93,7 @@ func LoadCRDFileFromRepositoryWithRef(repo *gogit.Repository, ref *plumbing.Hash
 	}
 
 	loadedCRD := &apiextensionsv1.CustomResourceDefinition{}
+
 	err = yaml.Unmarshal(crdBytes, loadedCRD)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling content of blob for file %q from repo with ref %v: %w", filename, commit.TreeHash, err)

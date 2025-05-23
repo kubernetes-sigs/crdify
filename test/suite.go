@@ -1,3 +1,17 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -12,6 +26,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/yaml"
+)
+
+var (
+	errMismatchedOutput = errors.New("output does not match expected")
+	errMissingTestFiles = errors.New("missing expected test files")
 )
 
 func main() {
@@ -52,10 +71,11 @@ func runTests(binary string, testDir string, update bool) error {
 	}
 
 	errs := []error{}
+
 	for _, test := range tests {
 		err := executeTest(test, binary, update)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("executing test %q: %v", test.name, err))
+			errs = append(errs, fmt.Errorf("executing test %q: %w", test.name, err))
 		}
 	}
 
@@ -80,10 +100,11 @@ func testsForDirectory(testDir string) ([]test, error) {
 
 	dirEntries, err := os.ReadDir(testDir)
 	if err != nil {
-		return nil, fmt.Errorf("reading test directory %q: %v", testDir, err)
+		return nil, fmt.Errorf("reading test directory %q: %w", testDir, err)
 	}
 
 	errs := []error{}
+
 	for _, entry := range dirEntries {
 		// all tests will have their own subdirectory
 		if !entry.IsDir() {
@@ -94,8 +115,9 @@ func testsForDirectory(testDir string) ([]test, error) {
 		sourceA := filepath.Join(base, sourceAName)
 		sourceB := filepath.Join(base, sourceBName)
 		expected := filepath.Join(base, expectedName)
+
 		if !hasFile(sourceA) || !hasFile(sourceB) || !hasFile(expected) {
-			errs = append(errs, fmt.Errorf("test %q does not have all the expected files", entry.Name()))
+			errs = append(errs, fmt.Errorf("test %q : %w", entry.Name(), errMissingTestFiles))
 			continue
 		}
 
@@ -121,42 +143,47 @@ func hasFile(file string) bool {
 }
 
 func executeTest(t test, binary string, update bool) error {
+	//nolint:gosec
 	cmd := exec.Command(binary, fmt.Sprintf("file://%s", t.sourceA), fmt.Sprintf("file://%s", t.sourceB), "--output=yaml")
 
 	outBytes, err := cmd.Output()
 	if err != nil {
 		// ignore errors when exit code is 1 - this is expected for tests that check for failures.
 		if cmd.ProcessState.ExitCode() != 1 {
-			return fmt.Errorf("failed to run command %q: %v | Output, if any: %s", cmd.String(), err, outBytes)
+			return fmt.Errorf("failed to run command %q: %w | Output, if any: %s", cmd.String(), err, outBytes)
 		}
 	}
 
 	if update {
 		err := os.WriteFile(t.expected, outBytes, os.FileMode(0555))
 		if err != nil {
-			return fmt.Errorf("updating golden file %q: %v", t.expected, err)
+			return fmt.Errorf("updating golden file %q: %w", t.expected, err)
 		}
+
 		return nil
 	}
 
 	var outYaml runner.Results
+
 	err = yaml.Unmarshal(outBytes, outYaml)
 	if err != nil {
-		return fmt.Errorf("unmarshalling output: %v", err)
+		return fmt.Errorf("unmarshalling output: %w", err)
 	}
 
 	expectedBytes, err := os.ReadFile(t.expected)
 	if err != nil {
-		return fmt.Errorf("reading contents of %q containing expected output: %v", t.expected, err)
+		return fmt.Errorf("reading contents of %q containing expected output: %w", t.expected, err)
 	}
+
 	var expectedYaml runner.Results
+
 	err = yaml.Unmarshal(expectedBytes, expectedYaml)
 	if err != nil {
-		return fmt.Errorf("unmarshalling expected output: %v", err)
+		return fmt.Errorf("unmarshalling expected output: %w", err)
 	}
 
 	if diff := cmp.Diff(expectedYaml, outYaml); diff != "" {
-		return fmt.Errorf("output does not match expected. Diff: %s", diff)
+		return fmt.Errorf("%w : %s", errMismatchedOutput, diff)
 	}
 
 	return nil

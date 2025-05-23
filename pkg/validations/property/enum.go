@@ -1,6 +1,21 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package property
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/everettraven/crd-diff/pkg/config"
@@ -17,7 +32,7 @@ var (
 )
 
 // RegisterEnum registers the Enum validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterEnum(registry validations.Registry) {
 	registry.Register(enumValidationName, enumFactory)
 }
@@ -26,6 +41,7 @@ func RegisterEnum(registry validations.Registry) {
 // implementation based on the provided configuration.
 func enumFactory(cfg map[string]interface{}) (validations.Validation, error) {
 	enumCfg := &EnumConfig{}
+
 	err := ConfigToType(cfg, enumCfg)
 	if err != nil {
 		return nil, fmt.Errorf("parsing config: %w", err)
@@ -43,7 +59,7 @@ func enumFactory(cfg map[string]interface{}) (validations.Validation, error) {
 // setting default values where appropriate.
 // Currently the defaulting behavior defaults the
 // EnumConfig.AdditionPolicy to AdditionPolicyDisallow
-// if it is set to the empty string ("")
+// if it is set to the empty string ("").
 func ValidateEnumConfig(in *EnumConfig) error {
 	if in == nil {
 		// nothing to validate
@@ -57,27 +73,30 @@ func ValidateEnumConfig(in *EnumConfig) error {
 		// default to disallow
 		in.AdditionPolicy = AdditionPolicyDisallow
 	default:
-		return fmt.Errorf("unknown addition policy %q", in.AdditionPolicy)
+		return fmt.Errorf("%w : %q", errUnknownAdditionPolicy, in.AdditionPolicy)
 	}
+
 	return nil
 }
 
+var errUnknownAdditionPolicy = errors.New("unknown addition policy")
+
 // AdditionPolicy is used to represent how the Enum validation
 // should determine compatibility of adding new enum values to an
-// existing enum constraint
+// existing enum constraint.
 type AdditionPolicy string
 
 const (
 	// AdditionPolicyAllow signals that adding new enum values to
-	// an existing enum constraint should be considered a compatible change
+	// an existing enum constraint should be considered a compatible change.
 	AdditionPolicyAllow AdditionPolicy = "Allow"
 
 	// AdditionPolicyDisallow signals that adding new enum values to
-	// an existing enum constraint should be considered an incompatible change
+	// an existing enum constraint should be considered an incompatible change.
 	AdditionPolicyDisallow AdditionPolicy = "Disallow"
 )
 
-// EnumConfig contains additional configurations for the Enum validation
+// EnumConfig contains additional configurations for the Enum validation.
 type EnumConfig struct {
 	// additionPolicy is how adding enums to an existing set of
 	// enums should be treated.
@@ -91,7 +110,7 @@ type EnumConfig struct {
 }
 
 // Enum is a Validation that can be used to identify
-// incompatible changes to the enum values of CRD properties
+// incompatible changes to the enum values of CRD properties.
 type Enum struct {
 	// EnumConfig is the set of additional configuration options
 	EnumConfig
@@ -101,12 +120,12 @@ type Enum struct {
 	enforcement config.EnforcementPolicy
 }
 
-// Name returns the name of the Enum validation
+// Name returns the name of the Enum validation.
 func (e *Enum) Name() string {
 	return enumValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the Enum validation
+// SetEnforcement sets the EnforcementPolicy for the Enum validation.
 func (e *Enum) SetEnforcement(policy config.EnforcementPolicy) {
 	e.enforcement = policy
 }
@@ -126,6 +145,7 @@ func (e *Enum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compar
 	for _, json := range b.Enum {
 		newEnums.Insert(string(json.Raw))
 	}
+
 	removedEnums := oldEnums.Difference(newEnums)
 	addedEnums := newEnums.Difference(oldEnums)
 
@@ -133,11 +153,11 @@ func (e *Enum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compar
 
 	switch {
 	case oldEnums.Len() == 0 && newEnums.Len() > 0:
-		err = fmt.Errorf("enum constraints %v added when there were no restrictions previously", newEnums.UnsortedList())
+		err = fmt.Errorf("%w : %v", ErrNetNewEnumConstraint, newEnums.UnsortedList())
 	case removedEnums.Len() > 0:
-		err = fmt.Errorf("enums %v removed from the set of previously allowed values", removedEnums.UnsortedList())
+		err = fmt.Errorf("%w : %v", ErrRemovedEnums, removedEnums.UnsortedList())
 	case addedEnums.Len() > 0 && e.AdditionPolicy != AdditionPolicyAllow:
-		err = fmt.Errorf("enums %v added to the set of allowed values", addedEnums.UnsortedList())
+		err = fmt.Errorf("%w : %v", ErrAddedEnums, addedEnums.UnsortedList())
 	}
 
 	a.Enum = nil
@@ -145,3 +165,14 @@ func (e *Enum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compar
 
 	return validations.HandleErrors(e.Name(), e.enforcement, err)
 }
+
+var (
+	// ErrNetNewEnumConstraint represents an error state where a net new enum constraint was added to a property.
+	ErrNetNewEnumConstraint = errors.New("enum constraint added when there was none previously")
+	// ErrRemovedEnums represents an error state where at least one previously allowed enum value was removed
+	// from the enum constraint on a property.
+	ErrRemovedEnums = errors.New("allowed enum values removed")
+	// ErrAddedEnums represents an error state where at least one enum value, that was not previously allowed,
+	// was added to the enum constraint on a property.
+	ErrAddedEnums = errors.New("allowed enum values added")
+)

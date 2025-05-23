@@ -1,6 +1,21 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package property
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/everettraven/crd-diff/pkg/config"
@@ -16,7 +31,7 @@ var (
 const typeValidationName = "type"
 
 // RegisterType registers the Type validation
-// with the provided validation registry
+// with the provided validation registry.
 func RegisterType(registry validations.Registry) {
 	registry.Register(typeValidationName, typeFactory)
 }
@@ -28,17 +43,17 @@ func typeFactory(_ map[string]interface{}) (validations.Validation, error) {
 }
 
 // Type is a Validation that can be used to identify
-// incompatible changes to the type constraints of CRD properties
+// incompatible changes to the type constraints of CRD properties.
 type Type struct {
 	enforcement config.EnforcementPolicy
 }
 
-// Name returns the name of the Type validation
+// Name returns the name of the Type validation.
 func (t *Type) Name() string {
 	return typeValidationName
 }
 
-// SetEnforcement sets the EnforcementPolicy for the Type validation
+// SetEnforcement sets the EnforcementPolicy for the Type validation.
 func (t *Type) SetEnforcement(policy config.EnforcementPolicy) {
 	t.enforcement = policy
 }
@@ -51,7 +66,7 @@ func (t *Type) SetEnforcement(policy config.EnforcementPolicy) {
 func (t *Type) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
 	var err error
 	if a.Type != b.Type {
-		err = fmt.Errorf("type changed from %q to %q", a.Type, b.Type)
+		err = fmt.Errorf("%w : %q -> %q", ErrTypeChanged, a.Type, b.Type)
 	}
 
 	a.Type = ""
@@ -59,3 +74,6 @@ func (t *Type) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compar
 
 	return validations.HandleErrors(t.Name(), t.enforcement, err)
 }
+
+// ErrTypeChanged represents an error state when a property type changed.
+var ErrTypeChanged = errors.New("type changed")

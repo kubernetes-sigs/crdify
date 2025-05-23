@@ -1,6 +1,21 @@
+// Copyright 2025 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package validations
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/everettraven/crd-diff/pkg/config"
@@ -14,13 +29,14 @@ import (
 // An 'unhandled' comparator will be injected to evaluate any unhandled changes by the provided comparators
 // that will be enforced based on the provided unhandled enforcement policy.
 // Returns a map[string][]ComparisonResult, where the map key is the flattened property path (i.e ^.spec.foo.bar).
-func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, unhandledEnforcement config.EnforcementPolicy, comparators ...Comparator[apiextensionsv1.JSONSchemaProps]) map[string][]ComparisonResult {
-	oldFlattened := FlattenCRDVersion(old)
-	newFlattened := FlattenCRDVersion(new)
+func CompareVersions(a, b apiextensionsv1.CustomResourceDefinitionVersion, unhandledEnforcement config.EnforcementPolicy, comparators ...Comparator[apiextensionsv1.JSONSchemaProps]) map[string][]ComparisonResult {
+	oldFlattened := FlattenCRDVersion(a)
+	newFlattened := FlattenCRDVersion(b)
 
 	diffs := FlattenedCRDVersionDiff(oldFlattened, newFlattened)
 
 	result := map[string][]ComparisonResult{}
+
 	for property, diff := range diffs {
 		result[property] = CompareProperties(diff.Old, diff.New, unhandledEnforcement, comparators...)
 	}
@@ -35,6 +51,7 @@ func CompareVersions(old, new apiextensionsv1.CustomResourceDefinitionVersion, u
 func CompareProperties(a, b *apiextensionsv1.JSONSchemaProps, unhandledEnforcement config.EnforcementPolicy, comparators ...Comparator[apiextensionsv1.JSONSchemaProps]) []ComparisonResult {
 	result := []ComparisonResult{}
 	aCopy, bCopy := a.DeepCopy(), b.DeepCopy()
+
 	for _, comparator := range comparators {
 		comparisonResult := comparator.Compare(aCopy, bCopy)
 		result = append(result, comparisonResult)
@@ -51,10 +68,15 @@ func CompareProperties(a, b *apiextensionsv1.JSONSchemaProps, unhandledEnforceme
 // It returns a ComparisonResult so that the results are treated generically just like a standard Comparator.
 func checkUnhandled(a, b *apiextensionsv1.JSONSchemaProps, enforcement config.EnforcementPolicy) ComparisonResult {
 	var err error
+
 	if !equality.Semantic.DeepEqual(a, b) {
 		diff := cmp.Diff(a, b)
-		err = fmt.Errorf("unhandled change(s) found - diff: %s", diff)
+		err = fmt.Errorf("%w :\n%s", ErrUnhandledChangesFound, diff)
 	}
 
 	return HandleErrors("unhandled", enforcement, err)
 }
+
+// ErrUnhandledChangesFound represents an error state where changes have been found that are not
+// handled by an existing validation check.
+var ErrUnhandledChangesFound = errors.New("unhandled changes found")
