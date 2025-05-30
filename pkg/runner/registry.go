@@ -15,11 +15,11 @@
 package runner
 
 import (
-	"github.com/everettraven/crd-diff/pkg/validations"
-	"github.com/everettraven/crd-diff/pkg/validations/crd/existingfieldremoval"
-	"github.com/everettraven/crd-diff/pkg/validations/crd/scope"
-	"github.com/everettraven/crd-diff/pkg/validations/crd/storedversionremoval"
-	"github.com/everettraven/crd-diff/pkg/validations/property"
+	"sigs.k8s.io/crdify/pkg/validations"
+	"sigs.k8s.io/crdify/pkg/validations/crd/existingfieldremoval"
+	"sigs.k8s.io/crdify/pkg/validations/crd/scope"
+	"sigs.k8s.io/crdify/pkg/validations/crd/storedversionremoval"
+	"sigs.k8s.io/crdify/pkg/validations/property"
 )
 
 //nolint:gochecknoglobals

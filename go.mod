@@ -1,4 +1,4 @@
-module github.com/everettraven/crd-diff
+module sigs.k8s.io/crdify
 
 go 1.24.0
 

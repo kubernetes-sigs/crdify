@@ -17,7 +17,7 @@ package main
 import (
 	"log"
 
-	"github.com/everettraven/crd-diff/cli"
+	"sigs.k8s.io/crdify/cli"
 )
 
 func main() {

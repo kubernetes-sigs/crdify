@@ -19,16 +19,16 @@ import (
 	"log"
 	"os"
 
-	"github.com/everettraven/crd-diff/pkg/config"
-	"github.com/everettraven/crd-diff/pkg/loaders/composite"
-	"github.com/everettraven/crd-diff/pkg/loaders/file"
-	"github.com/everettraven/crd-diff/pkg/loaders/git"
-	"github.com/everettraven/crd-diff/pkg/loaders/kubernetes"
-	"github.com/everettraven/crd-diff/pkg/loaders/scheme"
-	"github.com/everettraven/crd-diff/pkg/runner"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	crconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/crdify/pkg/config"
+	"sigs.k8s.io/crdify/pkg/loaders/composite"
+	"sigs.k8s.io/crdify/pkg/loaders/file"
+	"sigs.k8s.io/crdify/pkg/loaders/git"
+	"sigs.k8s.io/crdify/pkg/loaders/kubernetes"
+	"sigs.k8s.io/crdify/pkg/loaders/scheme"
+	"sigs.k8s.io/crdify/pkg/runner"
 )
 
 // NewRootCommand returns a cobra.Command for the program entrypoint.
@@ -47,21 +47,21 @@ func NewRootCommand() *cobra.Command {
 	)
 
 	rootCmd := &cobra.Command{
-		Use:   "crd-diff <old> <new>",
-		Short: "crd-diff evaluates changes to Kubernetes CustomResourceDefinitions",
-		Long: `crd-diff is a tool for evaluating changes to Kubernetes CustomResourceDefinitions
+		Use:   "crdify <old> <new>",
+		Short: "crdify evaluates changes to Kubernetes CustomResourceDefinitions",
+		Long: `crdify is a tool for evaluating changes to Kubernetes CustomResourceDefinitions
 to help cluster administrators, gitops practitioners, and Kubernetes extension developers identify
 changes that might result in a negative impact to clusters and/or users.
 
 Example use cases:
-    Evaluating a change in a CustomResourceDefinition on a Kubernetes Cluster with one in a file:
-        $ crd-diff kube://{crd-name} file://{filepath}
+    Ealuating a change in a CustomResourceDefinition on a Kubernetes Cluster with one in a file:
+        $ crdify kube://{crd-name} file://{filepath}
 
     Evaluating a change from file to file:
-        $ crd-diff file://{filepath} file://{filepath}
+        $ crdify file://{filepath} file://{filepath}
 
     Evaluating a change from git ref to git ref:
-            $ crd-diff git://{ref}?path={filepath} git://{ref}?path={filepath}`,
+            $ crdify git://{ref}?path={filepath} git://{ref}?path={filepath}`,
 		Args: cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Load(configFile)

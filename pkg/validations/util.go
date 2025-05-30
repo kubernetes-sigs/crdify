@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/everettraven/crd-diff/pkg/config"
-	"github.com/everettraven/crd-diff/pkg/slices"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/crdify/pkg/config"
+	"sigs.k8s.io/crdify/pkg/slices"
 )
 
 // GetCRDVersionByName returns a CustomResourceDefinitionVersion with the provided name from the provided CustomResourceDefinition.

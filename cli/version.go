@@ -29,10 +29,10 @@ import (
 func NewVersionCommand() *cobra.Command {
 	versionCommand := &cobra.Command{
 		Use:   "version",
-		Short: "installed version of crd-diff",
+		Short: "installed version of crdify",
 		Run: func(cmd *cobra.Command, args []string) {
 			var out strings.Builder
-			fig := figure.NewFigure("crd-diff", "rounded", true)
+			fig := figure.NewFigure("crdify", "rounded", true)
 			out.WriteString(fig.String() + "\n\n")
 
 			settingNameStyle := lipgloss.NewStyle().Bold(true)

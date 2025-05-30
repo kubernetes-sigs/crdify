@@ -17,9 +17,9 @@ package testing
 import (
 	"testing"
 
-	"github.com/everettraven/crd-diff/pkg/config"
-	"github.com/everettraven/crd-diff/pkg/validations"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/crdify/pkg/config"
+	"sigs.k8s.io/crdify/pkg/validations"
 )
 
 // ComparableValidation is a generic interface that represents
