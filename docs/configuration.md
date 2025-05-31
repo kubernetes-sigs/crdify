@@ -1,5 +1,5 @@
 # Configuration
-`crd-diff` can be customized using a YAML configuration file.
+`crdify` can be customized using a YAML configuration file.
 
 An example of configuring a validation via the configuration file:
 

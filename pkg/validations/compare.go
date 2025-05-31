@@ -18,10 +18,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/everettraven/crd-diff/pkg/config"
 	"github.com/google/go-cmp/cmp"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"sigs.k8s.io/crdify/pkg/config"
 )
 
 // CompareVersions calculates the diff in the provided old and new CustomResourceDefinitionVersions and

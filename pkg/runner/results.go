@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/everettraven/crd-diff/pkg/validations"
 	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/crdify/pkg/validations"
 )
 
 // Results is a utility type to hold the validation results of

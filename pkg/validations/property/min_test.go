@@ -17,9 +17,9 @@ package property
 import (
 	"testing"
 
-	internaltesting "github.com/everettraven/crd-diff/pkg/validations/internal/testing"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/utils/ptr"
+	internaltesting "sigs.k8s.io/crdify/pkg/validations/internal/testing"
 )
 
 func TestMinimum(t *testing.T) {

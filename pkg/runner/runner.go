@@ -19,12 +19,12 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/everettraven/crd-diff/pkg/config"
-	"github.com/everettraven/crd-diff/pkg/validations"
-	"github.com/everettraven/crd-diff/pkg/validators/crd"
-	"github.com/everettraven/crd-diff/pkg/validators/version/same"
-	"github.com/everettraven/crd-diff/pkg/validators/version/served"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"sigs.k8s.io/crdify/pkg/config"
+	"sigs.k8s.io/crdify/pkg/validations"
+	"sigs.k8s.io/crdify/pkg/validators/crd"
+	"sigs.k8s.io/crdify/pkg/validators/version/same"
+	"sigs.k8s.io/crdify/pkg/validators/version/served"
 )
 
 // Runner is a utility struct for running

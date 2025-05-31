@@ -17,8 +17,8 @@ package storedversionremoval
 import (
 	"testing"
 
-	internaltesting "github.com/everettraven/crd-diff/pkg/validations/internal/testing"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	internaltesting "sigs.k8s.io/crdify/pkg/validations/internal/testing"
 )
 
 func TestStoredVersionRemoval(t *testing.T) {

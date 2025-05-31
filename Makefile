@@ -19,7 +19,7 @@ unit:
 
 .PHONY: build
 build:
-	go build -o bin/crd-diff main.go
+	go build -o bin/crdify main.go
 
 .PHONY: fmt
 fmt:

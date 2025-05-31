@@ -22,10 +22,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/everettraven/crd-diff/pkg/runner"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"sigs.k8s.io/crdify/pkg/runner"
 )
 
 var (
@@ -48,7 +48,7 @@ func newTestCommand() *cobra.Command {
 
 	command := &cobra.Command{
 		Use:   "test [options]",
-		Short: "runs the crd-diff e2e test suite",
+		Short: "runs the crdify e2e test suite",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runTests(binary, testDir, update)
@@ -58,7 +58,7 @@ func newTestCommand() *cobra.Command {
 	}
 
 	command.Flags().BoolVar(&update, "update", false, "whether or not to update the expected output golden files")
-	command.Flags().StringVar(&binary, "binary", "./bin/crd-diff", "location of the crd-diff binary to execute")
+	command.Flags().StringVar(&binary, "binary", "./bin/crdify", "location of the crdify binary to execute")
 	command.Flags().StringVar(&testDir, "test-dir", "./test", "location of the tests to execute")
 
 	return command

@@ -1,6 +1,6 @@
 # Validations
 
-`crd-diff` has three different "validators" that run:
+`crdify` has three different "validators" that run:
 
 - CRD Validator - runs validations, known as "Global Validations", that verify compatibility of changes across the entire CRD.
 - Same Version Validator - runs validations, known as "Property Validations", that verify compatibility of changes to properties within the same versions.
