@@ -1,0 +1,1 @@
+{"crdValidation":[{"name":"existingFieldRemoval"},{"name":"storedVersionRemoval"},{"name":"scope"}],"sameVersionValidation":{"v1alpha1":{}}}

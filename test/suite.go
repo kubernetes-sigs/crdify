@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -24,8 +25,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/crdify/pkg/runner"
+	"sigs.k8s.io/crdify/pkg/validations"
 )
 
 var (
@@ -73,6 +75,7 @@ func runTests(binary string, testDir string, update bool) error {
 	errs := []error{}
 
 	for _, test := range tests {
+		fmt.Println("running test", test.name, "source A", test.sourceA, "source B", test.sourceB, "expected", test.expected, "update?", update, "binary", binary)
 		err := executeTest(test, binary, update)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("executing test %q: %w", test.name, err))
@@ -92,7 +95,7 @@ type test struct {
 const (
 	sourceAName  = "a.yaml"
 	sourceBName  = "b.yaml"
-	expectedName = "expected.yaml"
+	expectedName = "expected.json"
 )
 
 func testsForDirectory(testDir string) ([]test, error) {
@@ -144,7 +147,7 @@ func hasFile(file string) bool {
 
 func executeTest(t test, binary string, update bool) error {
 	//nolint:gosec
-	cmd := exec.Command(binary, fmt.Sprintf("file://%s", t.sourceA), fmt.Sprintf("file://%s", t.sourceB), "--output=yaml")
+	cmd := exec.Command(binary, fmt.Sprintf("file://%s", t.sourceA), fmt.Sprintf("file://%s", t.sourceB), "--output=json")
 
 	outBytes, err := cmd.Output()
 	if err != nil {
@@ -163,9 +166,9 @@ func executeTest(t test, binary string, update bool) error {
 		return nil
 	}
 
-	var outYaml runner.Results
+	var outJson runner.Results
 
-	err = yaml.Unmarshal(outBytes, outYaml)
+	err = json.Unmarshal(outBytes, &outJson)
 	if err != nil {
 		return fmt.Errorf("unmarshalling output: %w", err)
 	}
@@ -175,16 +178,140 @@ func executeTest(t test, binary string, update bool) error {
 		return fmt.Errorf("reading contents of %q containing expected output: %w", t.expected, err)
 	}
 
-	var expectedYaml runner.Results
+	var expectedJson runner.Results
 
-	err = yaml.Unmarshal(expectedBytes, expectedYaml)
+	err = json.Unmarshal(expectedBytes, &expectedJson)
 	if err != nil {
 		return fmt.Errorf("unmarshalling expected output: %w", err)
 	}
 
-	if diff := cmp.Diff(expectedYaml, outYaml); diff != "" {
-		return fmt.Errorf("%w : %s", errMismatchedOutput, diff)
+	if !compareSemantic(expectedJson, outJson) {
+		return fmt.Errorf("%w : %s", errMismatchedOutput, cmp.Diff(expectedJson, outJson))
 	}
 
 	return nil
+}
+
+func compareSemantic(a, b runner.Results) bool {
+	if !compareComparisonResultSemantic(a.CRDValidation, b.CRDValidation) {
+		return false
+	}
+
+	if !compareVersionedComparisonResultsSemantic(a.SameVersionValidation, b.SameVersionValidation) {
+		return false
+	}
+
+	if !compareVersionedComparisonResultsSemantic(a.ServedVersionValidation, a.ServedVersionValidation) {
+		return false
+	}
+
+	return true
+}
+
+func compareComparisonResultSemantic(a, b []validations.ComparisonResult) bool {
+	// do initial set comparison to make sure a and b have the same entries
+	aSet := sets.New[string]()
+	bSet := sets.New[string]()
+
+	for _, res := range a {
+		aSet.Insert(res.Name)
+	}
+
+	for _, res := range b {
+		bSet.Insert(res.Name)
+	}
+
+	if !aSet.Equal(bSet) {
+		return false
+	}
+
+	type result struct {
+		errs     []string
+		warnings []string
+	}
+	resultSet := map[string]result{}
+
+	// build the expected set
+	for _, res := range a {
+		resultSet[res.Name] = result{
+			errs:     res.Errors,
+			warnings: res.Warnings,
+		}
+	}
+
+	// do the comparison against actual
+	for _, res := range b {
+		expect := resultSet[res.Name]
+
+		if !compareArraySemantic(expect.errs, res.Errors) {
+			return false
+		}
+
+		if !compareArraySemantic(expect.warnings, res.Warnings) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareVersionedComparisonResultsSemantic(a, b map[string]map[string][]validations.ComparisonResult) bool {
+	aSet := sets.New[string]()
+	bSet := sets.New[string]()
+
+	for k := range a {
+		aSet.Insert(k)
+	}
+
+	for k := range b {
+		bSet.Insert(k)
+	}
+
+	if !aSet.Equal(bSet) {
+		return false
+	}
+
+	for k, v := range b {
+		expect := a[k]
+
+		if !comparePropertyComparisonResultsSemantic(expect, v) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func comparePropertyComparisonResultsSemantic(a, b map[string][]validations.ComparisonResult) bool {
+	aSet := sets.New[string]()
+	bSet := sets.New[string]()
+
+	for k := range a {
+		aSet.Insert(k)
+	}
+
+	for k := range b {
+		bSet.Insert(k)
+	}
+
+	if !aSet.Equal(bSet) {
+		return false
+	}
+
+	for k, v := range b {
+		expect := a[k]
+
+		if !compareComparisonResultSemantic(expect, v) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareArraySemantic[T comparable](a, b []T) bool {
+	aSet := sets.New(a...)
+	bSet := sets.New(b...)
+
+	return aSet.Equal(bSet)
 }
