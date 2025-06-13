@@ -158,17 +158,38 @@ func executeTest(t test, binary string, update bool) error {
 	}
 
 	if update {
-		err := os.WriteFile(t.expected, outBytes, os.FileMode(0555))
-		if err != nil {
-			return fmt.Errorf("updating golden file %q: %w", t.expected, err)
-		}
+		return performUpdate(t, outBytes)
+	}
 
+	return performComparison(t, outBytes)
+}
+
+func performUpdate(t test, outBytes []byte) error {
+	// First perform a comparison of the output and existing expected state.
+	// If we receive an error here that means they are not semantically equal
+	// and we should update the expected state file.
+	// If we do not receive an error here, then we know that the output and the
+	// existing expected state for this test is semantically equivalent
+	// and we should not perform an update.
+	// This helps to reduce churn in the expected state files because the output
+	// of crdify is non-deterministic.
+	err := performComparison(t, outBytes)
+	if err == nil {
 		return nil
 	}
 
-	var outJson runner.Results
+	err = os.WriteFile(t.expected, outBytes, os.FileMode(0555))
+	if err != nil {
+		return fmt.Errorf("updating golden file %q: %w", t.expected, err)
+	}
 
-	err = json.Unmarshal(outBytes, &outJson)
+	return nil
+}
+
+func performComparison(t test, outBytes []byte) error {
+	var outJSON runner.Results
+
+	err := json.Unmarshal(outBytes, &outJSON)
 	if err != nil {
 		return fmt.Errorf("unmarshalling output: %w", err)
 	}
@@ -178,14 +199,14 @@ func executeTest(t test, binary string, update bool) error {
 		return fmt.Errorf("reading contents of %q containing expected output: %w", t.expected, err)
 	}
 
-	var expectedJson runner.Results
+	var expectedJSON runner.Results
 
-	err = json.Unmarshal(expectedBytes, &expectedJson)
+	err = json.Unmarshal(expectedBytes, &expectedJSON)
 	if err != nil {
 		return fmt.Errorf("unmarshalling expected output: %w", err)
 	}
 
-	if err := compareSemantic(expectedJson, outJson); err != nil {
+	if err := compareSemantic(expectedJSON, outJSON); err != nil {
 		return fmt.Errorf("%w : %w", errMismatchedOutput, err)
 	}
 
@@ -222,13 +243,14 @@ func compareComparisonResultSemantic(a, b []validations.ComparisonResult) error 
 	}
 
 	if !aSet.Equal(bSet) {
-		return fmt.Errorf("expected comparison set %v does not match actual %v", aSet, bSet)
+		return fmt.Errorf("expected comparison set %v does not match actual %v", aSet, bSet) //nolint:err113
 	}
 
 	type result struct {
 		errs     []string
 		warnings []string
 	}
+
 	resultSet := map[string]result{}
 
 	// build the expected set
@@ -247,13 +269,14 @@ func compareComparisonResultSemantic(a, b []validations.ComparisonResult) error 
 		actualErrsNormalized := normalizeStringSlice(res.Errors...)
 
 		if !compareArraySemantic(expectedErrsNormalized, actualErrsNormalized) {
-			return fmt.Errorf("validation %q: expected error set %v does not match actual %v", res.Name, expect.errs, res.Errors)
+			return fmt.Errorf("validation %q: expected error set %v does not match actual %v", res.Name, expect.errs, res.Errors) //nolint:err113
 		}
 
 		expectedWarnsNormalized := normalizeStringSlice(expect.warnings...)
 		actualWarnsNormalized := normalizeStringSlice(res.Warnings...)
+
 		if !compareArraySemantic(expectedWarnsNormalized, actualWarnsNormalized) {
-			return fmt.Errorf("validation %q: expected warning set %v does not match actual %v", res.Name, expect.warnings, res.Warnings)
+			return fmt.Errorf("validation %q: expected warning set %v does not match actual %v", res.Name, expect.warnings, res.Warnings) //nolint:err113
 		}
 	}
 
@@ -261,9 +284,7 @@ func compareComparisonResultSemantic(a, b []validations.ComparisonResult) error 
 }
 
 func normalizeStringSlice(in ...string) []string {
-	return slices.Translate(func(s string) string {
-		return normalizeWhitespace(s)
-	}, in...)
+	return slices.Translate(normalizeWhitespace, in...)
 }
 
 // normalizeWhitespace normalizes a given string by splitting the
@@ -274,7 +295,7 @@ func normalizeStringSlice(in ...string) []string {
 // it outputs.
 //
 // An example of a normalized string:
-// "A quick brown fox" becomes "A\nquick\nbrown\nfox"
+// "A quick brown fox" becomes "A\nquick\nbrown\nfox".
 func normalizeWhitespace(in string) string {
 	fields := strings.Fields(in)
 	return strings.Join(fields, "\n")
@@ -293,7 +314,7 @@ func compareVersionedComparisonResultsSemantic(a, b map[string]map[string][]vali
 	}
 
 	if !aSet.Equal(bSet) {
-		return fmt.Errorf("expected version set %v does not match actual %v", aSet, bSet)
+		return fmt.Errorf("expected version set %v does not match actual %v", aSet, bSet) //nolint:err113
 	}
 
 	for k, v := range b {
@@ -320,7 +341,7 @@ func comparePropertyComparisonResultsSemantic(a, b map[string][]validations.Comp
 	}
 
 	if !aSet.Equal(bSet) {
-		return fmt.Errorf("expected property validation set %v does not match actual %v", aSet, bSet)
+		return fmt.Errorf("expected property validation set %v does not match actual %v", aSet, bSet) //nolint:err113
 	}
 
 	for k, v := range b {
