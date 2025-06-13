@@ -1,0 +1,64 @@
+{
+ "crdValidation": [
+  {
+   "name": "existingFieldRemoval"
+  },
+  {
+   "name": "scope"
+  },
+  {
+   "name": "storedVersionRemoval"
+  }
+ ],
+ "sameVersionValidation": {
+  "v1alpha1": {
+   "^.spec.mode": [
+    {
+     "name": "type"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "enum",
+     "errors": [
+      "enum constraint added when there was none previously : [\"\" \"Managed\" \"Unmanaged\"]"
+     ]
+    },
+    {
+     "name": "maxLength"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "default"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "unhandled"
+    }
+   ]
+  }
+ }
+}

@@ -117,3 +117,10 @@ etcd invalid.
 Validates compatibility of property types. It is considered a breaking change
 to change the type of a property as it breaks client/user expectations and makes existing
 stored instances of the resource invalid.
+
+### description
+
+Validates compatibility of changes to a property description. While most changes to the
+description of a property are _generally_ safe, it is important to note that changing
+the semantics of a field _is_ a breaking change as it breaks expectations clients/users
+have made about what configuring the property does.

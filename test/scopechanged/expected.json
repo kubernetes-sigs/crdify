@@ -1,0 +1,19 @@
+{
+ "crdValidation": [
+  {
+   "name": "scope",
+   "errors": [
+    "scope changed : \"Namespaced\" -\u003e \"Cluster\""
+   ]
+  },
+  {
+   "name": "existingFieldRemoval"
+  },
+  {
+   "name": "storedVersionRemoval"
+  }
+ ],
+ "sameVersionValidation": {
+  "v1alpha1": {}
+ }
+}

@@ -17,6 +17,7 @@ package property
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -153,11 +154,17 @@ func (e *Enum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compar
 
 	switch {
 	case oldEnums.Len() == 0 && newEnums.Len() > 0:
-		err = fmt.Errorf("%w : %v", ErrNetNewEnumConstraint, newEnums.UnsortedList())
+		newEnumSlice := newEnums.UnsortedList()
+		slices.Sort(newEnumSlice)
+		err = fmt.Errorf("%w : %v", ErrNetNewEnumConstraint, newEnumSlice)
 	case removedEnums.Len() > 0:
-		err = fmt.Errorf("%w : %v", ErrRemovedEnums, removedEnums.UnsortedList())
+		removedEnumSlice := removedEnums.UnsortedList()
+		slices.Sort(removedEnumSlice)
+		err = fmt.Errorf("%w : %v", ErrRemovedEnums, removedEnumSlice)
 	case addedEnums.Len() > 0 && e.AdditionPolicy != AdditionPolicyAllow:
-		err = fmt.Errorf("%w : %v", ErrAddedEnums, addedEnums.UnsortedList())
+		addedEnumSlice := addedEnums.UnsortedList()
+		slices.Sort(addedEnumSlice)
+		err = fmt.Errorf("%w : %v", ErrAddedEnums, addedEnumSlice)
 	}
 
 	a.Enum = nil

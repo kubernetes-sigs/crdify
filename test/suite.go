@@ -15,17 +15,20 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/crdify/pkg/runner"
+	"sigs.k8s.io/crdify/pkg/slices"
+	"sigs.k8s.io/crdify/pkg/validations"
 )
 
 var (
@@ -92,7 +95,7 @@ type test struct {
 const (
 	sourceAName  = "a.yaml"
 	sourceBName  = "b.yaml"
-	expectedName = "expected.yaml"
+	expectedName = "expected.json"
 )
 
 func testsForDirectory(testDir string) ([]test, error) {
@@ -144,7 +147,7 @@ func hasFile(file string) bool {
 
 func executeTest(t test, binary string, update bool) error {
 	//nolint:gosec
-	cmd := exec.Command(binary, fmt.Sprintf("file://%s", t.sourceA), fmt.Sprintf("file://%s", t.sourceB), "--output=yaml")
+	cmd := exec.Command(binary, fmt.Sprintf("file://%s", t.sourceA), fmt.Sprintf("file://%s", t.sourceB), "--output=json")
 
 	outBytes, err := cmd.Output()
 	if err != nil {
@@ -155,17 +158,38 @@ func executeTest(t test, binary string, update bool) error {
 	}
 
 	if update {
-		err := os.WriteFile(t.expected, outBytes, os.FileMode(0555))
-		if err != nil {
-			return fmt.Errorf("updating golden file %q: %w", t.expected, err)
-		}
+		return performUpdate(t, outBytes)
+	}
 
+	return performComparison(t, outBytes)
+}
+
+func performUpdate(t test, outBytes []byte) error {
+	// First perform a comparison of the output and existing expected state.
+	// If we receive an error here that means they are not semantically equal
+	// and we should update the expected state file.
+	// If we do not receive an error here, then we know that the output and the
+	// existing expected state for this test is semantically equivalent
+	// and we should not perform an update.
+	// This helps to reduce churn in the expected state files because the output
+	// of crdify is non-deterministic.
+	err := performComparison(t, outBytes)
+	if err == nil {
 		return nil
 	}
 
-	var outYaml runner.Results
+	err = os.WriteFile(t.expected, outBytes, os.FileMode(0555))
+	if err != nil {
+		return fmt.Errorf("updating golden file %q: %w", t.expected, err)
+	}
 
-	err = yaml.Unmarshal(outBytes, outYaml)
+	return nil
+}
+
+func performComparison(t test, outBytes []byte) error {
+	var outJSON runner.Results
+
+	err := json.Unmarshal(outBytes, &outJSON)
 	if err != nil {
 		return fmt.Errorf("unmarshalling output: %w", err)
 	}
@@ -175,16 +199,165 @@ func executeTest(t test, binary string, update bool) error {
 		return fmt.Errorf("reading contents of %q containing expected output: %w", t.expected, err)
 	}
 
-	var expectedYaml runner.Results
+	var expectedJSON runner.Results
 
-	err = yaml.Unmarshal(expectedBytes, expectedYaml)
+	err = json.Unmarshal(expectedBytes, &expectedJSON)
 	if err != nil {
 		return fmt.Errorf("unmarshalling expected output: %w", err)
 	}
 
-	if diff := cmp.Diff(expectedYaml, outYaml); diff != "" {
-		return fmt.Errorf("%w : %s", errMismatchedOutput, diff)
+	if err := compareSemantic(expectedJSON, outJSON); err != nil {
+		return fmt.Errorf("%w : %w", errMismatchedOutput, err)
 	}
 
 	return nil
+}
+
+func compareSemantic(a, b runner.Results) error {
+	if err := compareComparisonResultSemantic(a.CRDValidation, b.CRDValidation); err != nil {
+		return fmt.Errorf("comparing CRD validations: %w", err)
+	}
+
+	if err := compareVersionedComparisonResultsSemantic(a.SameVersionValidation, b.SameVersionValidation); err != nil {
+		return fmt.Errorf("comparing same version validations: %w", err)
+	}
+
+	if err := compareVersionedComparisonResultsSemantic(a.ServedVersionValidation, a.ServedVersionValidation); err != nil {
+		return fmt.Errorf("comparing served version validations: %w", err)
+	}
+
+	return nil
+}
+
+func compareComparisonResultSemantic(a, b []validations.ComparisonResult) error {
+	// do initial set comparison to make sure a and b have the same entries
+	aSet := sets.New[string]()
+	bSet := sets.New[string]()
+
+	for _, res := range a {
+		aSet.Insert(res.Name)
+	}
+
+	for _, res := range b {
+		bSet.Insert(res.Name)
+	}
+
+	if !aSet.Equal(bSet) {
+		return fmt.Errorf("expected comparison set %v does not match actual %v", aSet, bSet) //nolint:err113
+	}
+
+	type result struct {
+		errs     []string
+		warnings []string
+	}
+
+	resultSet := map[string]result{}
+
+	// build the expected set
+	for _, res := range a {
+		resultSet[res.Name] = result{
+			errs:     res.Errors,
+			warnings: res.Warnings,
+		}
+	}
+
+	// do the comparison against actual
+	for _, res := range b {
+		expect := resultSet[res.Name]
+
+		expectedErrsNormalized := normalizeStringSlice(expect.errs...)
+		actualErrsNormalized := normalizeStringSlice(res.Errors...)
+
+		if !compareArraySemantic(expectedErrsNormalized, actualErrsNormalized) {
+			return fmt.Errorf("validation %q: expected error set %v does not match actual %v", res.Name, expect.errs, res.Errors) //nolint:err113
+		}
+
+		expectedWarnsNormalized := normalizeStringSlice(expect.warnings...)
+		actualWarnsNormalized := normalizeStringSlice(res.Warnings...)
+
+		if !compareArraySemantic(expectedWarnsNormalized, actualWarnsNormalized) {
+			return fmt.Errorf("validation %q: expected warning set %v does not match actual %v", res.Name, expect.warnings, res.Warnings) //nolint:err113
+		}
+	}
+
+	return nil
+}
+
+func normalizeStringSlice(in ...string) []string {
+	return slices.Translate(normalizeWhitespace, in...)
+}
+
+// normalizeWhitespace normalizes a given string by splitting the
+// string on all whitespace and rejoining them with a new line.
+// This reduces flakiness in comparing things like diffs generated
+// by the `unhandled` validation that is meant to generate
+// human readable diffs and is nondeterministic in the whitespacing
+// it outputs.
+//
+// An example of a normalized string:
+// "A quick brown fox" becomes "A\nquick\nbrown\nfox".
+func normalizeWhitespace(in string) string {
+	fields := strings.Fields(in)
+	return strings.Join(fields, "\n")
+}
+
+func compareVersionedComparisonResultsSemantic(a, b map[string]map[string][]validations.ComparisonResult) error {
+	aSet := sets.New[string]()
+	bSet := sets.New[string]()
+
+	for k := range a {
+		aSet.Insert(k)
+	}
+
+	for k := range b {
+		bSet.Insert(k)
+	}
+
+	if !aSet.Equal(bSet) {
+		return fmt.Errorf("expected version set %v does not match actual %v", aSet, bSet) //nolint:err113
+	}
+
+	for k, v := range b {
+		expect := a[k]
+
+		if err := comparePropertyComparisonResultsSemantic(expect, v); err != nil {
+			return fmt.Errorf("comparing property validation results for version %q: %w", k, err)
+		}
+	}
+
+	return nil
+}
+
+func comparePropertyComparisonResultsSemantic(a, b map[string][]validations.ComparisonResult) error {
+	aSet := sets.New[string]()
+	bSet := sets.New[string]()
+
+	for k := range a {
+		aSet.Insert(k)
+	}
+
+	for k := range b {
+		bSet.Insert(k)
+	}
+
+	if !aSet.Equal(bSet) {
+		return fmt.Errorf("expected property validation set %v does not match actual %v", aSet, bSet) //nolint:err113
+	}
+
+	for k, v := range b {
+		expect := a[k]
+
+		if err := compareComparisonResultSemantic(expect, v); err != nil {
+			return fmt.Errorf("comparing results for property %q: %w", k, err)
+		}
+	}
+
+	return nil
+}
+
+func compareArraySemantic[T comparable](a, b []T) bool {
+	aSet := sets.New(a...)
+	bSet := sets.New(b...)
+
+	return aSet.Equal(bSet)
 }
