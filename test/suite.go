@@ -22,11 +22,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/crdify/pkg/runner"
+	"sigs.k8s.io/crdify/pkg/slices"
 	"sigs.k8s.io/crdify/pkg/validations"
 )
 
@@ -75,7 +76,6 @@ func runTests(binary string, testDir string, update bool) error {
 	errs := []error{}
 
 	for _, test := range tests {
-		fmt.Println("running test", test.name, "source A", test.sourceA, "source B", test.sourceB, "expected", test.expected, "update?", update, "binary", binary)
 		err := executeTest(test, binary, update)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("executing test %q: %w", test.name, err))
@@ -185,30 +185,30 @@ func executeTest(t test, binary string, update bool) error {
 		return fmt.Errorf("unmarshalling expected output: %w", err)
 	}
 
-	if !compareSemantic(expectedJson, outJson) {
-		return fmt.Errorf("%w : %s", errMismatchedOutput, cmp.Diff(expectedJson, outJson))
+	if err := compareSemantic(expectedJson, outJson); err != nil {
+		return fmt.Errorf("%w : %w", errMismatchedOutput, err)
 	}
 
 	return nil
 }
 
-func compareSemantic(a, b runner.Results) bool {
-	if !compareComparisonResultSemantic(a.CRDValidation, b.CRDValidation) {
-		return false
+func compareSemantic(a, b runner.Results) error {
+	if err := compareComparisonResultSemantic(a.CRDValidation, b.CRDValidation); err != nil {
+		return fmt.Errorf("comparing CRD validations: %w", err)
 	}
 
-	if !compareVersionedComparisonResultsSemantic(a.SameVersionValidation, b.SameVersionValidation) {
-		return false
+	if err := compareVersionedComparisonResultsSemantic(a.SameVersionValidation, b.SameVersionValidation); err != nil {
+		return fmt.Errorf("comparing same version validations: %w", err)
 	}
 
-	if !compareVersionedComparisonResultsSemantic(a.ServedVersionValidation, a.ServedVersionValidation) {
-		return false
+	if err := compareVersionedComparisonResultsSemantic(a.ServedVersionValidation, a.ServedVersionValidation); err != nil {
+		return fmt.Errorf("comparing served version validations: %w", err)
 	}
 
-	return true
+	return nil
 }
 
-func compareComparisonResultSemantic(a, b []validations.ComparisonResult) bool {
+func compareComparisonResultSemantic(a, b []validations.ComparisonResult) error {
 	// do initial set comparison to make sure a and b have the same entries
 	aSet := sets.New[string]()
 	bSet := sets.New[string]()
@@ -222,7 +222,7 @@ func compareComparisonResultSemantic(a, b []validations.ComparisonResult) bool {
 	}
 
 	if !aSet.Equal(bSet) {
-		return false
+		return fmt.Errorf("expected comparison set %v does not match actual %v", aSet, bSet)
 	}
 
 	type result struct {
@@ -243,19 +243,44 @@ func compareComparisonResultSemantic(a, b []validations.ComparisonResult) bool {
 	for _, res := range b {
 		expect := resultSet[res.Name]
 
-		if !compareArraySemantic(expect.errs, res.Errors) {
-			return false
+		expectedErrsNormalized := normalizeStringSlice(expect.errs...)
+		actualErrsNormalized := normalizeStringSlice(res.Errors...)
+
+		if !compareArraySemantic(expectedErrsNormalized, actualErrsNormalized) {
+			return fmt.Errorf("validation %q: expected error set %v does not match actual %v", res.Name, expect.errs, res.Errors)
 		}
 
-		if !compareArraySemantic(expect.warnings, res.Warnings) {
-			return false
+		expectedWarnsNormalized := normalizeStringSlice(expect.warnings...)
+		actualWarnsNormalized := normalizeStringSlice(res.Warnings...)
+		if !compareArraySemantic(expectedWarnsNormalized, actualWarnsNormalized) {
+			return fmt.Errorf("validation %q: expected warning set %v does not match actual %v", res.Name, expect.warnings, res.Warnings)
 		}
 	}
 
-	return true
+	return nil
 }
 
-func compareVersionedComparisonResultsSemantic(a, b map[string]map[string][]validations.ComparisonResult) bool {
+func normalizeStringSlice(in ...string) []string {
+	return slices.Translate(func(s string) string {
+		return normalizeWhitespace(s)
+	}, in...)
+}
+
+// normalizeWhitespace normalizes a given string by splitting the
+// string on all whitespace and rejoining them with a new line.
+// This reduces flakiness in comparing things like diffs generated
+// by the `unhandled` validation that is meant to generate
+// human readable diffs and is nondeterministic in the whitespacing
+// it outputs.
+//
+// An example of a normalized string:
+// "A quick brown fox" becomes "A\nquick\nbrown\nfox"
+func normalizeWhitespace(in string) string {
+	fields := strings.Fields(in)
+	return strings.Join(fields, "\n")
+}
+
+func compareVersionedComparisonResultsSemantic(a, b map[string]map[string][]validations.ComparisonResult) error {
 	aSet := sets.New[string]()
 	bSet := sets.New[string]()
 
@@ -268,21 +293,21 @@ func compareVersionedComparisonResultsSemantic(a, b map[string]map[string][]vali
 	}
 
 	if !aSet.Equal(bSet) {
-		return false
+		return fmt.Errorf("expected version set %v does not match actual %v", aSet, bSet)
 	}
 
 	for k, v := range b {
 		expect := a[k]
 
-		if !comparePropertyComparisonResultsSemantic(expect, v) {
-			return false
+		if err := comparePropertyComparisonResultsSemantic(expect, v); err != nil {
+			return fmt.Errorf("comparing property validation results for version %q: %w", k, err)
 		}
 	}
 
-	return true
+	return nil
 }
 
-func comparePropertyComparisonResultsSemantic(a, b map[string][]validations.ComparisonResult) bool {
+func comparePropertyComparisonResultsSemantic(a, b map[string][]validations.ComparisonResult) error {
 	aSet := sets.New[string]()
 	bSet := sets.New[string]()
 
@@ -295,18 +320,18 @@ func comparePropertyComparisonResultsSemantic(a, b map[string][]validations.Comp
 	}
 
 	if !aSet.Equal(bSet) {
-		return false
+		return fmt.Errorf("expected property validation set %v does not match actual %v", aSet, bSet)
 	}
 
 	for k, v := range b {
 		expect := a[k]
 
-		if !compareComparisonResultSemantic(expect, v) {
-			return false
+		if err := compareComparisonResultSemantic(expect, v); err != nil {
+			return fmt.Errorf("comparing results for property %q: %w", k, err)
 		}
 	}
 
-	return true
+	return nil
 }
 
 func compareArraySemantic[T comparable](a, b []T) bool {
