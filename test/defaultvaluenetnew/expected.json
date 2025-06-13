@@ -1,1 +1,64 @@
-{"crdValidation":[{"name":"existingFieldRemoval"},{"name":"scope"},{"name":"storedVersionRemoval"}],"sameVersionValidation":{"v1alpha1":{"^.spec.mode":[{"name":"description"},{"name":"minProperties"},{"name":"maxLength"},{"name":"minItems"},{"name":"default","errors":["default added when there was none previously : \"\\\"Managed\\\"\""]},{"name":"maxProperties"},{"name":"maximum"},{"name":"maxItems"},{"name":"required"},{"name":"type"},{"name":"enum"},{"name":"minimum"},{"name":"minLength"},{"name":"unhandled"}]}}}
+{
+ "crdValidation": [
+  {
+   "name": "existingFieldRemoval"
+  },
+  {
+   "name": "scope"
+  },
+  {
+   "name": "storedVersionRemoval"
+  }
+ ],
+ "sameVersionValidation": {
+  "v1alpha1": {
+   "^.spec.mode": [
+    {
+     "name": "enum"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "default",
+     "errors": [
+      "default added when there was none previously : \"\\\"Managed\\\"\""
+     ]
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "maxLength"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "unhandled"
+    }
+   ]
+  }
+ }
+}

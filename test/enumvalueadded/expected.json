@@ -1,1 +1,64 @@
-{"crdValidation":[{"name":"scope"},{"name":"existingFieldRemoval"},{"name":"storedVersionRemoval"}],"sameVersionValidation":{"v1alpha1":{"^.spec.mode":[{"name":"minItems"},{"name":"description"},{"name":"enum","errors":["allowed enum values added : [\"Unmanaged\"]"]},{"name":"maxLength"},{"name":"maxProperties"},{"name":"minLength"},{"name":"minimum"},{"name":"maxItems"},{"name":"default"},{"name":"maximum"},{"name":"minProperties"},{"name":"type"},{"name":"required"},{"name":"unhandled"}]}}}
+{
+ "crdValidation": [
+  {
+   "name": "scope"
+  },
+  {
+   "name": "storedVersionRemoval"
+  },
+  {
+   "name": "existingFieldRemoval"
+  }
+ ],
+ "sameVersionValidation": {
+  "v1alpha1": {
+   "^.spec.mode": [
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "enum",
+     "errors": [
+      "allowed enum values added : [\"Unmanaged\"]"
+     ]
+    },
+    {
+     "name": "maxLength"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "default"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "unhandled"
+    }
+   ]
+  }
+ }
+}

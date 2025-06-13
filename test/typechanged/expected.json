@@ -1,1 +1,67 @@
-{"crdValidation":[{"name":"existingFieldRemoval"},{"name":"scope"},{"name":"storedVersionRemoval"}],"sameVersionValidation":{"v1alpha1":{"^.spec.containerPort":[{"name":"minimum"},{"name":"maxItems"},{"name":"minLength"},{"name":"minProperties"},{"name":"required"},{"name":"enum"},{"name":"default"},{"name":"maxLength"},{"name":"maxProperties"},{"name":"type","errors":["type changed : \"integer\" -\u003e \"string\""]},{"name":"description"},{"name":"minItems"},{"name":"maximum"},{"name":"unhandled","errors":["unhandled changes found : \u0026v1.JSONSchemaProps{\n  \t... // 3 identical fields\n  \tDescription: \"\",\n  \tType:        \"\",\n- \tFormat:      \"int32\",\n+ \tFormat:      \"\",\n  \tTitle:       \"\",\n  \tDefault:     nil,\n  \t... // 36 identical fields\n  }"]}]}}}
+{
+ "crdValidation": [
+  {
+   "name": "existingFieldRemoval"
+  },
+  {
+   "name": "scope"
+  },
+  {
+   "name": "storedVersionRemoval"
+  }
+ ],
+ "sameVersionValidation": {
+  "v1alpha1": {
+   "^.spec.containerPort": [
+    {
+     "name": "maxLength"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "type",
+     "errors": [
+      "type changed : \"integer\" -\u003e \"string\""
+     ]
+    },
+    {
+     "name": "default"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "enum"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "unhandled",
+     "errors": [
+      "unhandled changes found :\n  \u0026v1.JSONSchemaProps{\n  \t... // 3 identical fields\n  \tDescription: \"\",\n  \tType:        \"\",\n- \tFormat:      \"int32\",\n+ \tFormat:      \"\",\n  \tTitle:       \"\",\n  \tDefault:     nil,\n  \t... // 36 identical fields\n  }\n"
+     ]
+    }
+   ]
+  }
+ }
+}

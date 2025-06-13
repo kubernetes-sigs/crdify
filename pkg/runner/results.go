@@ -84,7 +84,7 @@ var errUnknownRenderFormat = errors.New("unknown render format")
 
 // RenderJSON returns a string of the results rendered in JSON or an error.
 func (rr *Results) RenderJSON() (string, error) {
-	outBytes, err := json.Marshal(rr)
+	outBytes, err := json.MarshalIndent(rr, "", " ")
 	return string(outBytes), err
 }
 
