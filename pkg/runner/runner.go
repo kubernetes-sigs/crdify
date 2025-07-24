@@ -59,7 +59,7 @@ func New(cfg *config.Config, registry validations.Registry) (*Runner, error) {
 	return &Runner{
 		crdValidator:           crd.New(crd.WithComparators(crdComparators...)),
 		sameVersionValidator:   same.New(same.WithComparators(propertyComparators...), same.WithUnhandledEnforcementPolicy(cfg.UnhandledEnforcement)),
-		servedVersionValidator: served.New(served.WithComparators(propertyComparators...), served.WithUnhandledEnforcementPolicy(cfg.UnhandledEnforcement), served.WithConversionPolicy(cfg.Conversion)),
+		servedVersionValidator: served.New(served.WithComparators(propertyComparators...), served.WithUnhandledEnforcementPolicy(cfg.UnhandledEnforcement), served.WithConversionPolicy(cfg.Conversion), served.WithVersionComparison(cfg.ServedVersionComparison)),
 	}, nil
 }
 
