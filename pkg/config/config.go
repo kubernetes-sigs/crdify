@@ -61,6 +61,28 @@ const (
 	ConversionPolicyIgnore ConversionPolicy = "Ignore"
 )
 
+// ServedVersionComparison is a representaqtion of how the served version
+// validator chooses which served versions to compare.
+type ServedVersionComparison string
+
+const (
+	// ServedVersionComparisonNone is used to represent that the served
+	// version validator should not compare any served versions in the new
+	// CRD. This effectively disables the served version validator.
+	ServedVersionComparisonNone ServedVersionComparison = "None"
+
+	// ServedVersionComparisonOnlyDiff is used to represent that the served
+	// version validator should only perform comparisons between version pairs
+	// if either version's schema has changed from the old CRD to the new CRD
+	// or if the version is newly added in the new CRD.
+	ServedVersionComparisonOnlyDiff ServedVersionComparison = "OnlyDiff"
+
+	// ServedVersionComparisonAll is used to represent that the served
+	// version validator should perform comparisons among all combinations of
+	// served versions.
+	ServedVersionComparisonAll ServedVersionComparison = "All"
+)
+
 // Config is the configuration used for dictating how validations
 // and validators should be configured.
 type Config struct {
@@ -97,7 +119,8 @@ type Config struct {
 	// When set to None, even if a conversion strategy of "Webhook" is specified served
 	// versions will be validated.
 	// Defaults to None.
-	Conversion ConversionPolicy `json:"conversion"`
+	Conversion              ConversionPolicy        `json:"conversion"`
+	ServedVersionComparison ServedVersionComparison `json:"servedVersionComparison"`
 }
 
 // ValidationConfig is used to dictate how individual validations
