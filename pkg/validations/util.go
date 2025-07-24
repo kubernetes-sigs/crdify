@@ -77,8 +77,7 @@ func FlattenedCRDVersionDiff(a, b map[string]*apiextensionsv1.JSONSchemaProps) m
 		// based on changes to the children properties. The changes to the children
 		// properties should still be evaluated since we are looping through a flattened
 		// map of all the properties for the CRD version
-		oldSchemaCopy := oldSchema.DeepCopy()
-		oldSchemaCopy.Properties = nil
+		oldSchemaCopy := DropChildrenPropertiesFromJSONSchema(oldSchema)
 		newSchema, ok := b[prop]
 
 		// In the event the property no longer exists on the new version
@@ -91,8 +90,7 @@ func FlattenedCRDVersionDiff(a, b map[string]*apiextensionsv1.JSONSchemaProps) m
 
 		// Do the same copy and unset logic for the new schema properties
 		// before comparison to ensure we are only comparing the individual properties
-		newSchemaCopy := newSchema.DeepCopy()
-		newSchemaCopy.Properties = nil
+		newSchemaCopy := DropChildrenPropertiesFromJSONSchema(newSchema)
 
 		if !equality.Semantic.DeepEqual(oldSchemaCopy, newSchemaCopy) {
 			diffMap[prop] = Diff{Old: oldSchemaCopy, New: newSchemaCopy}
@@ -100,6 +98,20 @@ func FlattenedCRDVersionDiff(a, b map[string]*apiextensionsv1.JSONSchemaProps) m
 	}
 
 	return diffMap
+}
+
+// DropChildrenPropertiesFromJSONSchema sets properties on a schema
+// associated with children schemas to `nil`. Useful when calculating
+// differences between a before and after of a given schema
+// without the changes to its children schemas influencing the
+// diff calculation.
+// Returns a copy of the provided apiextensionsv1.JSONSchemaProps with children schemas dropped.
+func DropChildrenPropertiesFromJSONSchema(schema *apiextensionsv1.JSONSchemaProps) *apiextensionsv1.JSONSchemaProps {
+	schemaCopy := schema.DeepCopy()
+	schemaCopy.Properties = nil
+	schemaCopy.Items = nil
+
+	return schemaCopy
 }
 
 // SchemaWalkerFunc is a function that walks a JSONSchemaProps.
