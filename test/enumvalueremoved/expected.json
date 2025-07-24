@@ -14,28 +14,19 @@
   "v1alpha1": {
    "^.spec.mode": [
     {
+     "name": "description"
+    },
+    {
      "name": "maxLength"
+    },
+    {
+     "name": "maximum"
     },
     {
      "name": "maxItems"
     },
     {
-     "name": "minimum"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "description"
-    },
-    {
      "name": "required"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "minLength"
     },
     {
      "name": "minProperties"
@@ -44,7 +35,10 @@
      "name": "type"
     },
     {
-     "name": "default"
+     "name": "minimum"
+    },
+    {
+     "name": "minLength"
     },
     {
      "name": "enum",
@@ -53,7 +47,16 @@
      ]
     },
     {
-     "name": "maximum"
+     "name": "default"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "format"
+    },
+    {
+     "name": "maxProperties"
     },
     {
      "name": "unhandled"

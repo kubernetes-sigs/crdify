@@ -4,26 +4,29 @@
    "name": "existingFieldRemoval"
   },
   {
-   "name": "storedVersionRemoval"
+   "name": "scope"
   },
   {
-   "name": "scope"
+   "name": "storedVersionRemoval"
   }
  ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.config": [
     {
-     "name": "type"
+     "name": "default"
     },
     {
-     "name": "description"
+     "name": "minimum"
+    },
+    {
+     "name": "maximum"
     },
     {
      "name": "enum"
     },
     {
-     "name": "maximum"
+     "name": "maxLength"
     },
     {
      "name": "maxProperties",
@@ -32,28 +35,28 @@
      ]
     },
     {
-     "name": "minimum"
+     "name": "maxItems"
     },
     {
      "name": "minLength"
     },
     {
-     "name": "default"
+     "name": "minItems"
     },
     {
      "name": "required"
     },
     {
-     "name": "maxItems"
+     "name": "type"
     },
     {
-     "name": "minItems"
+     "name": "format"
+    },
+    {
+     "name": "description"
     },
     {
      "name": "minProperties"
-    },
-    {
-     "name": "maxLength"
     },
     {
      "name": "unhandled"
@@ -61,31 +64,22 @@
    ],
    "^.spec.containerPorts": [
     {
-     "name": "type"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "maxProperties"
+     "name": "default"
     },
     {
      "name": "minimum"
     },
     {
-     "name": "minLength"
+     "name": "maximum"
     },
     {
-     "name": "default"
+     "name": "enum"
     },
     {
-     "name": "required"
+     "name": "maxLength"
+    },
+    {
+     "name": "maxProperties"
     },
     {
      "name": "maxItems",
@@ -94,13 +88,25 @@
      ]
     },
     {
+     "name": "minLength"
+    },
+    {
      "name": "minItems"
     },
     {
-     "name": "minProperties"
+     "name": "required"
     },
     {
-     "name": "maxLength"
+     "name": "type"
+    },
+    {
+     "name": "format"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "minProperties"
     },
     {
      "name": "unhandled"
@@ -108,40 +114,16 @@
    ],
    "^.spec.name": [
     {
-     "name": "type"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "maxProperties"
+     "name": "default"
     },
     {
      "name": "minimum"
     },
     {
-     "name": "minLength"
+     "name": "maximum"
     },
     {
-     "name": "default"
-    },
-    {
-     "name": "required"
-    },
-    {
-     "name": "maxItems"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "minProperties"
+     "name": "enum"
     },
     {
      "name": "maxLength",
@@ -150,18 +132,42 @@
      ]
     },
     {
-     "name": "unhandled"
-    }
-   ],
-   "^.spec.size": [
+     "name": "maxProperties"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "required"
+    },
     {
      "name": "type"
+    },
+    {
+     "name": "format"
     },
     {
      "name": "description"
     },
     {
-     "name": "enum"
+     "name": "minProperties"
+    },
+    {
+     "name": "unhandled"
+    }
+   ],
+   "^.spec.size": [
+    {
+     "name": "default"
+    },
+    {
+     "name": "minimum"
     },
     {
      "name": "maximum",
@@ -170,31 +176,37 @@
      ]
     },
     {
+     "name": "enum"
+    },
+    {
+     "name": "maxLength"
+    },
+    {
      "name": "maxProperties"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "required"
     },
     {
      "name": "maxItems"
     },
     {
+     "name": "minLength"
+    },
+    {
      "name": "minItems"
     },
     {
-     "name": "minProperties"
+     "name": "required"
     },
     {
-     "name": "maxLength"
+     "name": "type"
+    },
+    {
+     "name": "format"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "minProperties"
     },
     {
      "name": "unhandled"

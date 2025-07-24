@@ -1,10 +1,10 @@
 {
  "crdValidation": [
   {
-   "name": "existingFieldRemoval"
+   "name": "storedVersionRemoval"
   },
   {
-   "name": "storedVersionRemoval"
+   "name": "existingFieldRemoval"
   },
   {
    "name": "scope"
@@ -14,40 +14,43 @@
   "v1alpha1": {
    "^.spec.size": [
     {
-     "name": "maxItems"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "required"
+     "name": "minItems"
     },
     {
      "name": "maxLength"
     },
     {
-     "name": "type"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "minItems"
+     "name": "format"
     },
     {
      "name": "maxProperties"
     },
     {
-     "name": "default"
+     "name": "type"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "enum"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "maximum"
     },
     {
      "name": "minLength"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "default"
     },
     {
      "name": "description",

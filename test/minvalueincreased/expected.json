@@ -1,24 +1,18 @@
 {
  "crdValidation": [
   {
-   "name": "existingFieldRemoval"
-  },
-  {
    "name": "storedVersionRemoval"
   },
   {
    "name": "scope"
+  },
+  {
+   "name": "existingFieldRemoval"
   }
  ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.config": [
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "maxProperties"
-    },
     {
      "name": "minProperties",
      "errors": [
@@ -26,22 +20,37 @@
      ]
     },
     {
-     "name": "type"
-    },
-    {
-     "name": "description"
+     "name": "required"
     },
     {
      "name": "maxItems"
     },
     {
+     "name": "description"
+    },
+    {
      "name": "enum"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "default"
     },
     {
      "name": "maximum"
     },
     {
-     "name": "minimum"
+     "name": "format"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maxLength"
     },
     {
      "name": "minItems"
@@ -50,42 +59,45 @@
      "name": "minLength"
     },
     {
-     "name": "default"
-    },
-    {
-     "name": "required"
-    },
-    {
      "name": "unhandled"
     }
    ],
    "^.spec.containerPorts": [
     {
-     "name": "maxLength"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
      "name": "minProperties"
     },
     {
-     "name": "type"
-    },
-    {
-     "name": "description"
+     "name": "required"
     },
     {
      "name": "maxItems"
     },
     {
+     "name": "description"
+    },
+    {
      "name": "enum"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "default"
     },
     {
      "name": "maximum"
     },
     {
-     "name": "minimum"
+     "name": "format"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maxLength"
     },
     {
      "name": "minItems",
@@ -97,42 +109,45 @@
      "name": "minLength"
     },
     {
-     "name": "default"
-    },
-    {
-     "name": "required"
-    },
-    {
      "name": "unhandled"
     }
    ],
    "^.spec.name": [
     {
-     "name": "maxLength"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
      "name": "minProperties"
     },
     {
-     "name": "type"
-    },
-    {
-     "name": "description"
+     "name": "required"
     },
     {
      "name": "maxItems"
     },
     {
+     "name": "description"
+    },
+    {
      "name": "enum"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "default"
     },
     {
      "name": "maximum"
     },
     {
-     "name": "minimum"
+     "name": "format"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maxLength"
     },
     {
      "name": "minItems"
@@ -144,39 +159,24 @@
      ]
     },
     {
-     "name": "default"
-    },
-    {
-     "name": "required"
-    },
-    {
      "name": "unhandled"
     }
    ],
    "^.spec.size": [
     {
-     "name": "maxLength"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
      "name": "minProperties"
     },
     {
-     "name": "type"
-    },
-    {
-     "name": "description"
+     "name": "required"
     },
     {
      "name": "maxItems"
     },
     {
-     "name": "enum"
+     "name": "description"
     },
     {
-     "name": "maximum"
+     "name": "enum"
     },
     {
      "name": "minimum",
@@ -185,16 +185,28 @@
      ]
     },
     {
+     "name": "default"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "format"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maxLength"
+    },
+    {
      "name": "minItems"
     },
     {
      "name": "minLength"
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "required"
     },
     {
      "name": "unhandled"

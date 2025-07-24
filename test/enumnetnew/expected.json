@@ -14,13 +14,19 @@
   "v1alpha1": {
    "^.spec.mode": [
     {
-     "name": "type"
+     "name": "minimum"
     },
     {
-     "name": "minProperties"
+     "name": "maximum"
     },
     {
-     "name": "description"
+     "name": "maxItems"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "default"
     },
     {
      "name": "enum",
@@ -32,28 +38,25 @@
      "name": "maxLength"
     },
     {
-     "name": "minimum"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "default"
+     "name": "required"
     },
     {
      "name": "minItems"
     },
     {
-     "name": "maxProperties"
+     "name": "type"
+    },
+    {
+     "name": "minProperties"
     },
     {
      "name": "minLength"
     },
     {
-     "name": "maxItems"
+     "name": "description"
     },
     {
-     "name": "required"
+     "name": "format"
     },
     {
      "name": "unhandled"

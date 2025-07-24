@@ -1,13 +1,13 @@
 {
  "crdValidation": [
   {
+   "name": "storedVersionRemoval"
+  },
+  {
    "name": "existingFieldRemoval"
   },
   {
    "name": "scope"
-  },
-  {
-   "name": "storedVersionRemoval"
   }
  ],
  "sameVersionValidation": {
@@ -20,28 +20,34 @@
      "name": "maximum"
     },
     {
-     "name": "required"
+     "name": "maxProperties"
     },
     {
-     "name": "minItems"
-    },
-    {
-     "name": "type",
-     "errors": [
-      "type changed : \"integer\" -\u003e \"string\""
-     ]
-    },
-    {
-     "name": "default"
+     "name": "enum"
     },
     {
      "name": "minProperties"
     },
     {
+     "name": "required"
+    },
+    {
+     "name": "default"
+    },
+    {
      "name": "minimum"
     },
     {
-     "name": "maxProperties"
+     "name": "minItems"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "format",
+     "errors": [
+      "format changed : \"int32\" -\u003e \"\""
+     ]
     },
     {
      "name": "maxItems"
@@ -50,16 +56,13 @@
      "name": "description"
     },
     {
-     "name": "enum"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "unhandled",
+     "name": "type",
      "errors": [
-      "unhandled changes found :\n  \u0026v1.JSONSchemaProps{\n  \t... // 3 identical fields\n  \tDescription: \"\",\n  \tType:        \"\",\n- \tFormat:      \"int32\",\n+ \tFormat:      \"\",\n  \tTitle:       \"\",\n  \tDefault:     nil,\n  \t... // 36 identical fields\n  }\n"
+      "type changed : \"integer\" -\u003e \"string\""
      ]
+    },
+    {
+     "name": "unhandled"
     }
    ]
   }
