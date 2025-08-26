@@ -1,56 +1,23 @@
 {
  "crdValidation": [
   {
-   "name": "existingFieldRemoval",
-   "errors": [
-    "removed field : v1alpha1.^.spec.mode"
-   ]
-  },
-  {
    "name": "scope"
   },
   {
    "name": "storedVersionRemoval"
+  },
+  {
+   "name": "existingFieldRemoval",
+   "errors": [
+    "removed field : v1alpha1.^.spec.mode"
+   ]
   }
  ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.mode": [
     {
-     "name": "minProperties"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "required"
-    },
-    {
      "name": "maxLength"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "enum",
-     "errors": [
-      "allowed enum values removed : [\"Managed\" \"Unmanaged\"]"
-     ]
-    },
-    {
-     "name": "default",
-     "errors": [
-      "default value removed : \"\\\"Managed\\\"\""
-     ]
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "description",
-     "errors": [
-      "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
-     ]
     },
     {
      "name": "type",
@@ -59,13 +26,49 @@
      ]
     },
     {
-     "name": "minimum"
-    },
-    {
      "name": "maxItems"
     },
     {
+     "name": "default",
+     "errors": [
+      "default value removed : \"\\\"Managed\\\"\""
+     ]
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "required"
+    },
+    {
      "name": "minLength"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "format"
+    },
+    {
+     "name": "enum",
+     "errors": [
+      "allowed enum values removed : [\"Managed\" \"Unmanaged\"]"
+     ]
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "description",
+     "errors": [
+      "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
+     ]
     },
     {
      "name": "unhandled"
