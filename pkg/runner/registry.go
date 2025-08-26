@@ -29,6 +29,7 @@ func init() {
 	existingfieldremoval.Register(defaultRegistry)
 	scope.Register(defaultRegistry)
 	storedversionremoval.Register(defaultRegistry)
+	property.RegisterAnyOf(defaultRegistry)
 	property.RegisterDefault(defaultRegistry)
 	property.RegisterEnum(defaultRegistry)
 	property.RegisterMaximum(defaultRegistry)
