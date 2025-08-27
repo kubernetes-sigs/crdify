@@ -124,3 +124,10 @@ Validates compatibility of changes to a property description. While most changes
 description of a property are _generally_ safe, it is important to note that changing
 the semantics of a field _is_ a breaking change as it breaks expectations clients/users
 have made about what configuring the property does.
+
+### nullable
+
+Validates compatibility of changes to a property nullable constraint. While most changes to the
+nullable constraint of a property are _generally_ safe, it is important to note that changing
+the semantics of a field _is_ a breaking change as it breaks expectations clients/users
+have made about what configuring the property does.

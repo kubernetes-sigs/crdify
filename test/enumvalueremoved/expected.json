@@ -1,47 +1,20 @@
 {
  "crdValidation": [
   {
+   "name": "scope"
+  },
+  {
    "name": "storedVersionRemoval"
   },
   {
    "name": "existingFieldRemoval"
-  },
-  {
-   "name": "scope"
   }
  ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.mode": [
     {
-     "name": "maxLength"
-    },
-    {
      "name": "maxItems"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "required"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "type"
     },
     {
      "name": "default"
@@ -53,7 +26,37 @@
      ]
     },
     {
+     "name": "maxLength"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "nullable"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "required"
+    },
+    {
      "name": "maximum"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "type"
     },
     {
      "name": "unhandled"

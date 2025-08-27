@@ -1,59 +1,62 @@
 {
  "crdValidation": [
   {
+   "name": "scope"
+  },
+  {
    "name": "existingFieldRemoval"
   },
   {
    "name": "storedVersionRemoval"
-  },
-  {
-   "name": "scope"
   }
  ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.size": [
     {
-     "name": "maxItems"
-    },
-    {
-     "name": "minimum"
-    },
-    {
      "name": "minProperties"
     },
     {
-     "name": "required"
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "type"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "enum"
+     "name": "maxItems"
     },
     {
      "name": "minItems"
     },
     {
-     "name": "maxProperties"
+     "name": "maxLength"
     },
     {
      "name": "default"
-    },
-    {
-     "name": "minLength"
     },
     {
      "name": "description",
      "errors": [
       "description changed : \"Size defines the number of Memcached instances\" -\u003e \"Size defines how big, in gigabytes, a Memcached database can be before being backed up\""
      ]
+    },
+    {
+     "name": "nullable"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "enum"
     },
     {
      "name": "unhandled"

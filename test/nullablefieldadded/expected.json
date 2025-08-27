@@ -12,10 +12,7 @@
  ],
  "sameVersionValidation": {
   "v1alpha1": {
-   "^.spec.mode": [
-    {
-     "name": "maxLength"
-    },
+   "^.spec.description": [
     {
      "name": "maximum"
     },
@@ -23,40 +20,43 @@
      "name": "minItems"
     },
     {
-     "name": "description"
-    },
-    {
      "name": "default"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "nullable"
-    },
-    {
-     "name": "type"
     },
     {
      "name": "maxItems"
     },
     {
+     "name": "maxLength"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "enum"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "nullable",
+     "errors": [
+      "property changed from non-nullable to nullable"
+     ]
+    },
+    {
+     "name": "minLength"
+    },
+    {
      "name": "required"
     },
     {
-     "name": "enum",
-     "errors": [
-      "allowed enum values added : [\"Unmanaged\"]"
-     ]
+     "name": "maxProperties"
     },
     {
      "name": "unhandled"
