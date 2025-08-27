@@ -12,48 +12,48 @@
  ],
  "sameVersionValidation": {
   "v1alpha1": {
-   "^.spec.mode": [
-    {
-     "name": "nullable"
-    },
-    {
-     "name": "required"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "type"
-    },
-    {
-     "name": "description"
-    },
+   "^.spec.description": [
     {
      "name": "maxProperties"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "default",
-     "errors": [
-      "default value changed : \"\\\"Managed\\\"\" -\u003e \"\\\"Unmanaged\\\"\""
-     ]
-    },
-    {
-     "name": "minItems"
     },
     {
      "name": "maxItems"
     },
     {
+     "name": "maxLength"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "default"
+    },
+    {
      "name": "maximum"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "enum"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "nullable",
+     "errors": [
+      "property changed from nullable to non-nullable"
+     ]
     },
     {
      "name": "minLength"

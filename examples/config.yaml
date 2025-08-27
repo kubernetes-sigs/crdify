@@ -6,3 +6,8 @@ validations:
     enforcement: Error
     configuration:
       additionPolicy: Allow
+  # example of configuring nullable validation to allow making properties nullable
+  - name: nullable
+    enforcement: Error
+    configuration:
+      toNullablePolicy: Allow

@@ -14,34 +14,22 @@
   "v1alpha1": {
    "^.spec.config": [
     {
-     "name": "type"
-    },
-    {
-     "name": "minimum"
+     "name": "minItems"
     },
     {
      "name": "default"
     },
     {
-     "name": "maximum"
-    },
-    {
-     "name": "maxItems"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "minLength"
+     "name": "minimum"
     },
     {
      "name": "required"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maximum"
     },
     {
      "name": "maxLength"
@@ -56,28 +44,25 @@
      ]
     },
     {
-     "name": "unhandled"
-    }
-   ],
-   "^.spec.containerPorts": [
-    {
-     "name": "type"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "maximum"
+     "name": "description"
     },
     {
      "name": "maxItems"
     },
     {
-     "name": "description"
+     "name": "nullable"
     },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "enum"
+    },
+    {
+     "name": "unhandled"
+    }
+   ],
+   "^.spec.containerPorts": [
     {
      "name": "minItems",
      "errors": [
@@ -85,13 +70,19 @@
      ]
     },
     {
-     "name": "enum"
+     "name": "default"
     },
     {
-     "name": "minLength"
+     "name": "minimum"
     },
     {
      "name": "required"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maximum"
     },
     {
      "name": "maxLength"
@@ -103,33 +94,60 @@
      "name": "minProperties"
     },
     {
-     "name": "unhandled"
-    }
-   ],
-   "^.spec.name": [
-    {
-     "name": "type"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "maximum"
+     "name": "description"
     },
     {
      "name": "maxItems"
     },
     {
-     "name": "description"
+     "name": "nullable"
     },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "enum"
+    },
+    {
+     "name": "unhandled"
+    }
+   ],
+   "^.spec.name": [
     {
      "name": "minItems"
     },
     {
-     "name": "enum"
+     "name": "default"
+    },
+    {
+     "name": "minimum"
+    },
+    {
+     "name": "required"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maximum"
+    },
+    {
+     "name": "maxLength"
+    },
+    {
+     "name": "maxProperties"
+    },
+    {
+     "name": "minProperties"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "nullable"
     },
     {
      "name": "minLength",
@@ -138,16 +156,7 @@
      ]
     },
     {
-     "name": "required"
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "minProperties"
+     "name": "enum"
     },
     {
      "name": "unhandled"
@@ -155,7 +164,10 @@
    ],
    "^.spec.size": [
     {
-     "name": "type"
+     "name": "minItems"
+    },
+    {
+     "name": "default"
     },
     {
      "name": "minimum",
@@ -164,28 +176,13 @@
      ]
     },
     {
-     "name": "default"
+     "name": "required"
+    },
+    {
+     "name": "type"
     },
     {
      "name": "maximum"
-    },
-    {
-     "name": "maxItems"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "required"
     },
     {
      "name": "maxLength"
@@ -195,6 +192,21 @@
     },
     {
      "name": "minProperties"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
+     "name": "nullable"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "enum"
     },
     {
      "name": "unhandled"

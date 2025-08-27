@@ -4,20 +4,35 @@
    "name": "storedVersionRemoval"
   },
   {
-   "name": "existingFieldRemoval"
+   "name": "scope"
   },
   {
-   "name": "scope"
+   "name": "existingFieldRemoval"
   }
  ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.mode": [
     {
+     "name": "maxProperties"
+    },
+    {
+     "name": "description"
+    },
+    {
+     "name": "type"
+    },
+    {
+     "name": "maxItems"
+    },
+    {
      "name": "minProperties"
     },
     {
-     "name": "required"
+     "name": "maxLength"
+    },
+    {
+     "name": "minimum"
     },
     {
      "name": "minItems"
@@ -26,34 +41,22 @@
      "name": "enum"
     },
     {
-     "name": "description"
-    },
-    {
-     "name": "maxItems"
-    },
-    {
      "name": "maximum"
     },
     {
-     "name": "maxProperties"
+     "name": "minLength"
     },
     {
-     "name": "minimum"
+     "name": "required"
+    },
+    {
+     "name": "nullable"
     },
     {
      "name": "default",
      "errors": [
       "default value removed : \"\\\"Managed\\\"\""
      ]
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "type"
-    },
-    {
-     "name": "minLength"
     },
     {
      "name": "unhandled"

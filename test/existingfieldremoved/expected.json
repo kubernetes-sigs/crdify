@@ -17,25 +17,7 @@
   "v1alpha1": {
    "^.spec.mode": [
     {
-     "name": "minProperties"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "required"
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "enum",
-     "errors": [
-      "allowed enum values removed : [\"Managed\" \"Unmanaged\"]"
-     ]
+     "name": "nullable"
     },
     {
      "name": "default",
@@ -47,10 +29,10 @@
      "name": "maximum"
     },
     {
-     "name": "description",
-     "errors": [
-      "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
-     ]
+     "name": "minProperties"
+    },
+    {
+     "name": "required"
     },
     {
      "name": "type",
@@ -59,13 +41,34 @@
      ]
     },
     {
+     "name": "maxProperties"
+    },
+    {
+     "name": "minLength"
+    },
+    {
+     "name": "minItems"
+    },
+    {
+     "name": "description",
+     "errors": [
+      "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
+     ]
+    },
+    {
+     "name": "enum",
+     "errors": [
+      "allowed enum values removed : [\"Managed\" \"Unmanaged\"]"
+     ]
+    },
+    {
+     "name": "maxLength"
+    },
+    {
      "name": "minimum"
     },
     {
      "name": "maxItems"
-    },
-    {
-     "name": "minLength"
     },
     {
      "name": "unhandled"
