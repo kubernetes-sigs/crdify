@@ -50,8 +50,8 @@ func FlattenCRDVersion(crdVersion apiextensionsv1.CustomResourceDefinitionVersio
 		field.NewPath("^"),
 		field.NewPath("^"),
 		nil,
-		func(s *apiextensionsv1.JSONSchemaProps, _, simpleLocation *field.Path, _ []*apiextensionsv1.JSONSchemaProps) bool {
-			flatMap[simpleLocation.String()] = s.DeepCopy()
+		func(s *apiextensionsv1.JSONSchemaProps, fldPath, _ *field.Path, _ []*apiextensionsv1.JSONSchemaProps) bool {
+			flatMap[fldPath.String()] = s.DeepCopy()
 			return false
 		},
 	)
