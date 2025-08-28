@@ -58,6 +58,10 @@ type ComparisonResult struct {
 	Warnings []string `json:"warnings,omitempty"`
 }
 
+func (cr ComparisonResult) IsZero() bool {
+	return len(cr.Errors) == 0 && len(cr.Warnings) == 0
+}
+
 // Factory is a function used for creating a Validation based on a
 // provided configuration. Should return an error if the Validation
 // cannot be successfully created with the provided configuration.

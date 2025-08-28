@@ -44,6 +44,47 @@ type Results struct {
 	ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
 }
 
+func (r *Results) MarshalJSON() ([]byte, error) {
+	out := &struct {
+		CRDValidation           []validations.ComparisonResult                       `json:"crdValidation,omitempty"`
+		SameVersionValidation   map[string]map[string][]validations.ComparisonResult `json:"sameVersionValidation,omitempty"`
+		ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
+	}{}
+	for _, result := range r.CRDValidation {
+		if result.IsZero() {
+			continue
+		}
+
+		out.CRDValidation = append(out.CRDValidation, result)
+	}
+
+	out.SameVersionValidation = dropZeroResultsFromVersionedComparisonResults(r.SameVersionValidation)
+	out.ServedVersionValidation = dropZeroResultsFromVersionedComparisonResults(r.ServedVersionValidation)
+
+	return json.Marshal(out)
+}
+
+func dropZeroResultsFromVersionedComparisonResults(versionedComparisonResults map[string]map[string][]validations.ComparisonResult) map[string]map[string][]validations.ComparisonResult {
+	versionMap := map[string]map[string][]validations.ComparisonResult{}
+	for version, paths := range versionedComparisonResults {
+		pathMap := map[string][]validations.ComparisonResult{}
+		for path, comparisonResults := range paths {
+			results := []validations.ComparisonResult{}
+			for _, result := range comparisonResults {
+				if result.IsZero() {
+					continue
+				}
+				results = append(results, result)
+			}
+			pathMap[path] = results
+		}
+
+		versionMap[version] = pathMap
+	}
+
+	return versionMap
+}
+
 // Format is a representation of an output format.
 type Format string
 
