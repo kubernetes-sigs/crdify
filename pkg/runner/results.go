@@ -44,6 +44,62 @@ type Results struct {
 	ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
 }
 
+// MarshalJSON is a custom JSON marshalling function
+// to ensure that we only include in the JSON/YAML rendered
+// output the set of validations that returned some form
+// of information (warnings/errors).
+func (rr *Results) MarshalJSON() ([]byte, error) {
+	out := &struct {
+		CRDValidation           []validations.ComparisonResult                       `json:"crdValidation,omitempty"`
+		SameVersionValidation   map[string]map[string][]validations.ComparisonResult `json:"sameVersionValidation,omitempty"`
+		ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
+	}{}
+
+	for _, result := range rr.CRDValidation {
+		if result.IsZero() {
+			continue
+		}
+
+		out.CRDValidation = append(out.CRDValidation, result)
+	}
+
+	out.SameVersionValidation = dropZeroResultsFromVersionedComparisonResults(rr.SameVersionValidation)
+	out.ServedVersionValidation = dropZeroResultsFromVersionedComparisonResults(rr.ServedVersionValidation)
+
+	return json.Marshal(out) //nolint:wrapcheck
+}
+
+// dropZeroResultsFromVersionedComparisonResults is a utility
+// function for dropping any results from a versioned comparison result
+// that does not contain any additional information (warnings/errors),
+// which is useful for only rendering the exact validations
+// that failed/warned.
+func dropZeroResultsFromVersionedComparisonResults(versionedComparisonResults map[string]map[string][]validations.ComparisonResult) map[string]map[string][]validations.ComparisonResult {
+	versionMap := map[string]map[string][]validations.ComparisonResult{}
+
+	for version, paths := range versionedComparisonResults {
+		pathMap := map[string][]validations.ComparisonResult{}
+
+		for path, comparisonResults := range paths {
+			results := []validations.ComparisonResult{}
+
+			for _, result := range comparisonResults {
+				if result.IsZero() {
+					continue
+				}
+
+				results = append(results, result)
+			}
+
+			pathMap[path] = results
+		}
+
+		versionMap[version] = pathMap
+	}
+
+	return versionMap
+}
+
 // Format is a representation of an output format.
 type Format string
 
