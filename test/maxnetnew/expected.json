@@ -1,203 +1,36 @@
 {
- "crdValidation": [
-  {
-   "name": "existingFieldRemoval"
-  },
-  {
-   "name": "storedVersionRemoval"
-  },
-  {
-   "name": "scope"
-  }
- ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.config": [
-    {
-     "name": "required"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "minItems"
-    },
     {
      "name": "maxProperties",
      "errors": [
       "maximum constraint added when there was none previously : 10"
      ]
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "maxItems"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "type"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "unhandled"
     }
    ],
    "^.spec.containerPorts": [
-    {
-     "name": "required"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "maxLength"
-    },
     {
      "name": "maxItems",
      "errors": [
       "maximum constraint added when there was none previously : 10"
      ]
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "type"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "unhandled"
     }
    ],
    "^.spec.name": [
-    {
-     "name": "required"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "maxProperties"
-    },
     {
      "name": "maxLength",
      "errors": [
       "maximum constraint added when there was none previously : 10"
      ]
-    },
-    {
-     "name": "maxItems"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "type"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "unhandled"
     }
    ],
    "^.spec.size": [
-    {
-     "name": "required"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "minItems"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "maxItems"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "type"
-    },
     {
      "name": "maximum",
      "errors": [
       "maximum constraint added when there was none previously : 10"
      ]
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "unhandled"
     }
    ]
   }

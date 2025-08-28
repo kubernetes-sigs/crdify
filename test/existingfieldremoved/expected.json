@@ -5,51 +5,15 @@
    "errors": [
     "removed field : v1alpha1.^.spec.mode"
    ]
-  },
-  {
-   "name": "scope"
-  },
-  {
-   "name": "storedVersionRemoval"
   }
  ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.mode": [
     {
-     "name": "minProperties"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "required"
-    },
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "minItems"
-    },
-    {
      "name": "enum",
      "errors": [
       "allowed enum values removed : [\"Managed\" \"Unmanaged\"]"
-     ]
-    },
-    {
-     "name": "default",
-     "errors": [
-      "default value removed : \"\\\"Managed\\\"\""
-     ]
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "description",
-     "errors": [
-      "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
      ]
     },
     {
@@ -59,16 +23,16 @@
      ]
     },
     {
-     "name": "minimum"
+     "name": "description",
+     "errors": [
+      "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
+     ]
     },
     {
-     "name": "maxItems"
-    },
-    {
-     "name": "minLength"
-    },
-    {
-     "name": "unhandled"
+     "name": "default",
+     "errors": [
+      "default value removed : \"\\\"Managed\\\"\""
+     ]
     }
    ]
   }
