@@ -44,6 +44,47 @@ type Results struct {
 	ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
 }
 
+func (r *Results) MarshalJSON() ([]byte, error) {
+	out := &struct {
+		CRDValidation           []validations.ComparisonResult                       `json:"crdValidation,omitempty"`
+		SameVersionValidation   map[string]map[string][]validations.ComparisonResult `json:"sameVersionValidation,omitempty"`
+		ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
+	}{}
+	for _, result := range r.CRDValidation {
+		if result.IsZero() {
+			continue
+		}
+
+		out.CRDValidation = append(out.CRDValidation, result)
+	}
+
+	out.SameVersionValidation = dropZeroResultsFromVersionedComparisonResults(r.SameVersionValidation)
+	out.ServedVersionValidation = dropZeroResultsFromVersionedComparisonResults(r.ServedVersionValidation)
+
+	return json.Marshal(out)
+}
+
+func dropZeroResultsFromVersionedComparisonResults(versionedComparisonResults map[string]map[string][]validations.ComparisonResult) map[string]map[string][]validations.ComparisonResult {
+	versionMap := map[string]map[string][]validations.ComparisonResult{}
+	for version, paths := range versionedComparisonResults {
+		pathMap := map[string][]validations.ComparisonResult{}
+		for path, comparisonResults := range paths {
+			results := []validations.ComparisonResult{}
+			for _, result := range comparisonResults {
+				if result.IsZero() {
+					continue
+				}
+				results = append(results, result)
+			}
+			pathMap[path] = results
+		}
+
+		versionMap[version] = pathMap
+	}
+
+	return versionMap
+}
+
 // Format is a representation of an output format.
 type Format string
 
@@ -100,8 +141,6 @@ func (rr *Results) RenderYAML() (string, error) {
 func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 	var out strings.Builder
 
-	out.WriteString("# CRD Validations\n")
-
 	for _, result := range rr.CRDValidation {
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
@@ -114,14 +153,7 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 				out.WriteString(fmt.Sprintf("- **%s** - `WARNING` - %s\n", result.Name, err))
 			}
 		}
-
-		if len(result.Errors) == 0 && len(result.Warnings) == 0 {
-			out.WriteString(fmt.Sprintf("- **%s** - ✓\n", result.Name))
-		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("# Same Version Validations\n")
 
 	for version, result := range rr.SameVersionValidation {
 		for property, results := range result {
@@ -137,16 +169,9 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `WARNING` - %s\n", version, property, propertyResult.Name, err))
 					}
 				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - ✓\n", version, property, propertyResult.Name))
-				}
 			}
 		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("# Served Version Validations\n")
 
 	for version, result := range rr.ServedVersionValidation {
 		for property, results := range result {
@@ -161,10 +186,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 					for _, err := range propertyResult.Warnings {
 						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `WARNING` - %s\n", version, property, propertyResult.Name, err))
 					}
-				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - ✓\n", version, property, propertyResult.Name))
 				}
 			}
 		}
@@ -179,8 +200,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 	var out strings.Builder
 
-	out.WriteString("CRD Validations\n")
-
 	for _, result := range rr.CRDValidation {
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
@@ -193,14 +212,7 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 				out.WriteString(fmt.Sprintf("- %s - WARNING - %s\n", result.Name, err))
 			}
 		}
-
-		if len(result.Errors) == 0 && len(result.Warnings) == 0 {
-			out.WriteString(fmt.Sprintf("- %s - ✓\n", result.Name))
-		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("Same Version Validations\n")
 
 	for version, result := range rr.SameVersionValidation {
 		for property, results := range result {
@@ -216,16 +228,9 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 						out.WriteString(fmt.Sprintf("- %s - %s - %s - WARNING - %s\n", version, property, propertyResult.Name, err))
 					}
 				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- %s - %s - %s - ✓\n", version, property, propertyResult.Name))
-				}
 			}
 		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("Served Version Validations\n")
 
 	for version, result := range rr.ServedVersionValidation {
 		for property, results := range result {
@@ -240,10 +245,6 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 					for _, err := range propertyResult.Warnings {
 						out.WriteString(fmt.Sprintf("- %s - %s - %s - WARNING - %s\n", version, property, propertyResult.Name, err))
 					}
-				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- %s - %s - %s - ✓\n", version, property, propertyResult.Name))
 				}
 			}
 		}
