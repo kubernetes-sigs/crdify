@@ -156,8 +156,6 @@ func (rr *Results) RenderYAML() (string, error) {
 func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 	var out strings.Builder
 
-	out.WriteString("# CRD Validations\n")
-
 	for _, result := range rr.CRDValidation {
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
@@ -171,9 +169,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 			}
 		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("# Same Version Validations\n")
 
 	for version, result := range rr.SameVersionValidation {
 		for property, results := range result {
@@ -192,9 +187,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 			}
 		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("# Served Version Validations\n")
 
 	for version, result := range rr.ServedVersionValidation {
 		for property, results := range result {
@@ -223,8 +215,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 	var out strings.Builder
 
-	out.WriteString("CRD Validations\n")
-
 	for _, result := range rr.CRDValidation {
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
@@ -238,9 +228,6 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 			}
 		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("Same Version Validations\n")
 
 	for version, result := range rr.SameVersionValidation {
 		for property, results := range result {
@@ -259,9 +246,6 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 			}
 		}
 	}
-
-	out.WriteString("\n\n")
-	out.WriteString("Served Version Validations\n")
 
 	for version, result := range rr.ServedVersionValidation {
 		for property, results := range result {
