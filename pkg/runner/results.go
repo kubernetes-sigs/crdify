@@ -155,10 +155,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 				out.WriteString(fmt.Sprintf("- **%s** - `WARNING` - %s\n", result.Name, err))
 			}
 		}
-
-		if len(result.Errors) == 0 && len(result.Warnings) == 0 {
-			out.WriteString(fmt.Sprintf("- **%s** - ✓\n", result.Name))
-		}
 	}
 
 	out.WriteString("\n\n")
@@ -177,10 +173,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 					for _, err := range propertyResult.Warnings {
 						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `WARNING` - %s\n", version, property, propertyResult.Name, err))
 					}
-				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - ✓\n", version, property, propertyResult.Name))
 				}
 			}
 		}
@@ -202,10 +194,6 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 					for _, err := range propertyResult.Warnings {
 						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `WARNING` - %s\n", version, property, propertyResult.Name, err))
 					}
-				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - ✓\n", version, property, propertyResult.Name))
 				}
 			}
 		}
@@ -234,10 +222,6 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 				out.WriteString(fmt.Sprintf("- %s - WARNING - %s\n", result.Name, err))
 			}
 		}
-
-		if len(result.Errors) == 0 && len(result.Warnings) == 0 {
-			out.WriteString(fmt.Sprintf("- %s - ✓\n", result.Name))
-		}
 	}
 
 	out.WriteString("\n\n")
@@ -256,10 +240,6 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 					for _, err := range propertyResult.Warnings {
 						out.WriteString(fmt.Sprintf("- %s - %s - %s - WARNING - %s\n", version, property, propertyResult.Name, err))
 					}
-				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- %s - %s - %s - ✓\n", version, property, propertyResult.Name))
 				}
 			}
 		}
@@ -281,10 +261,6 @@ func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
 					for _, err := range propertyResult.Warnings {
 						out.WriteString(fmt.Sprintf("- %s - %s - %s - WARNING - %s\n", version, property, propertyResult.Name, err))
 					}
-				}
-
-				if len(propertyResult.Errors) == 0 && len(propertyResult.Warnings) == 0 {
-					out.WriteString(fmt.Sprintf("- %s - %s - %s - ✓\n", version, property, propertyResult.Name))
 				}
 			}
 		}
