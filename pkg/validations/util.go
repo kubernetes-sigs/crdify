@@ -143,31 +143,31 @@ func SchemaHas(s *apiextensionsv1.JSONSchemaProps, fldPath, simpleLocation *fiel
 		}
 
 		for i := range s.Items.JSONSchemas {
-			if schemaHasRecurse(&s.Items.JSONSchemas[i], fldPath.Child("items", "jsonSchemas").Index(i), simpleLocation.Index(i), nextAncestry, pred) {
+			if schemaHasRecurse(&s.Items.JSONSchemas[i], fldPath.Child("items", "jsonSchemas").Index(i), simpleLocation.Child("items").Index(i), nextAncestry, pred) {
 				return true
 			}
 		}
 	}
 
 	for i := range s.AllOf {
-		if schemaHasRecurse(&s.AllOf[i], fldPath.Child("allOf").Index(i), simpleLocation, nextAncestry, pred) {
+		if schemaHasRecurse(&s.AllOf[i], fldPath.Child("allOf").Index(i), simpleLocation.Child("allOf").Index(i), nextAncestry, pred) {
 			return true
 		}
 	}
 
 	for i := range s.AnyOf {
-		if schemaHasRecurse(&s.AnyOf[i], fldPath.Child("anyOf").Index(i), simpleLocation, nextAncestry, pred) {
+		if schemaHasRecurse(&s.AnyOf[i], fldPath.Child("anyOf").Index(i), simpleLocation.Child("anyOf").Index(i), nextAncestry, pred) {
 			return true
 		}
 	}
 
 	for i := range s.OneOf {
-		if schemaHasRecurse(&s.OneOf[i], fldPath.Child("oneOf").Index(i), simpleLocation, nextAncestry, pred) {
+		if schemaHasRecurse(&s.OneOf[i], fldPath.Child("oneOf").Index(i), simpleLocation.Child("anyOf").Index(i), nextAncestry, pred) {
 			return true
 		}
 	}
 
-	if schemaHasRecurse(s.Not, fldPath.Child("not"), simpleLocation, nextAncestry, pred) {
+	if schemaHasRecurse(s.Not, fldPath.Child("not"), simpleLocation.Child("not"), nextAncestry, pred) {
 		return true
 	}
 
