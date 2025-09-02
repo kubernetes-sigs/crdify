@@ -175,3 +175,175 @@ func TestFlattenedCRDVersionDiff(t *testing.T) {
 		})
 	}
 }
+
+func TestFlattenCRDVersion(t *testing.T) {
+	type testcase struct {
+		name         string
+		version      apiextensionsv1.CustomResourceDefinitionVersion
+		expectedKeys []string
+	}
+
+	testcases := []testcase{
+		{
+			name: "basic schema",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "string",
+									},
+									"fieldTwo": {
+										Type: "string",
+									},
+									"fieldThree": {
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"subfield": {
+												Type: "number",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldTwo",
+				"^.spec.fieldThree",
+				"^.spec.fieldThree.subfield",
+				"^.spec",
+			},
+		},
+		{
+			name: "schema with items",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "array",
+										Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+											Schema: &apiextensionsv1.JSONSchemaProps{
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"subfield": {
+														Type: "number",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne[*].subfield",
+				"^.spec",
+			},
+		},
+		{
+			name: "schema with items with JSONSchemas",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "array",
+										Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+											JSONSchemas: []apiextensionsv1.JSONSchemaProps{
+												{
+													Properties: map[string]apiextensionsv1.JSONSchemaProps{
+														"subfield": {
+															Type: "number",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.items[0].subfield",
+				"^.spec",
+			},
+		},
+		{
+			name: "schema with allOf",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										AllOf: []apiextensionsv1.JSONSchemaProps{
+											{
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": apiextensionsv1.JSONSchemaProps{
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.allOf[0]",
+				"^.spec.fieldOne.allOf[0].nested",
+				"^.spec",
+			},
+		},
+		// TODO:
+		// - AnyOf
+		// - OneOf
+		// - Not
+		// - AdditionalProperties
+		// - PatternProperties
+		// - AdditionalItems
+		// - Definitions
+		// - Dependencies
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := FlattenCRDVersion(tc.version)
+			missingKeys := []string{}
+			for _, expectedKey := range tc.expectedKeys {
+				if _, ok := out[expectedKey]; !ok {
+					missingKeys = append(missingKeys, expectedKey)
+				}
+			}
+
+			if len(missingKeys) > 0 {
+				t.Fatalf("expected the following keys to be present after flattening the CRD version, but they were not: %v", missingKeys)
+			}
+		})
+	}
+}
