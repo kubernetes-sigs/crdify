@@ -1,59 +1,12 @@
 {
- "crdValidation": [
-  {
-   "name": "existingFieldRemoval"
-  },
-  {
-   "name": "scope"
-  },
-  {
-   "name": "storedVersionRemoval"
-  }
- ],
  "sameVersionValidation": {
   "v1alpha1": {
    "^.spec.containerPort": [
-    {
-     "name": "maxLength"
-    },
-    {
-     "name": "maximum"
-    },
-    {
-     "name": "required"
-    },
-    {
-     "name": "minItems"
-    },
     {
      "name": "type",
      "errors": [
       "type changed : \"integer\" -\u003e \"string\""
      ]
-    },
-    {
-     "name": "default"
-    },
-    {
-     "name": "minProperties"
-    },
-    {
-     "name": "minimum"
-    },
-    {
-     "name": "maxProperties"
-    },
-    {
-     "name": "maxItems"
-    },
-    {
-     "name": "description"
-    },
-    {
-     "name": "enum"
-    },
-    {
-     "name": "minLength"
     },
     {
      "name": "unhandled",
