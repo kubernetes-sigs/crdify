@@ -39,6 +39,7 @@ func init() {
 	property.RegisterMinItems(defaultRegistry)
 	property.RegisterMinLength(defaultRegistry)
 	property.RegisterMinProperties(defaultRegistry)
+	property.RegisterOneOf(defaultRegistry)
 	property.RegisterRequired(defaultRegistry)
 	property.RegisterType(defaultRegistry)
 	property.RegisterDescription(defaultRegistry)
