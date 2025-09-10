@@ -1,38 +1,53 @@
 {
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec.config": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "minProperties",
-     "errors": [
-      "minimum increased : 2 -\u003e 4"
+     "property": "^.spec.config",
+     "comparisonResults": [
+      {
+       "name": "minProperties",
+       "errors": [
+        "minimum increased : 2 -\u003e 4"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.containerPorts": [
+    },
     {
-     "name": "minItems",
-     "errors": [
-      "minimum increased : 2 -\u003e 4"
+     "property": "^.spec.containerPorts",
+     "comparisonResults": [
+      {
+       "name": "minItems",
+       "errors": [
+        "minimum increased : 2 -\u003e 4"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.name": [
+    },
     {
-     "name": "minLength",
-     "errors": [
-      "minimum increased : 2 -\u003e 4"
+     "property": "^.spec.name",
+     "comparisonResults": [
+      {
+       "name": "minLength",
+       "errors": [
+        "minimum increased : 2 -\u003e 4"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.size": [
+    },
     {
-     "name": "minimum",
-     "errors": [
-      "minimum increased : 2 -\u003e 4"
+     "property": "^.spec.size",
+     "comparisonResults": [
+      {
+       "name": "minimum",
+       "errors": [
+        "minimum increased : 2 -\u003e 4"
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }

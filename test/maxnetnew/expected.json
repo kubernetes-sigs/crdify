@@ -1,38 +1,53 @@
 {
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec.config": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "maxProperties",
-     "errors": [
-      "maximum constraint added when there was none previously : 10"
+     "property": "^.spec.config",
+     "comparisonResults": [
+      {
+       "name": "maxProperties",
+       "errors": [
+        "maximum constraint added when there was none previously : 10"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.containerPorts": [
+    },
     {
-     "name": "maxItems",
-     "errors": [
-      "maximum constraint added when there was none previously : 10"
+     "property": "^.spec.containerPorts",
+     "comparisonResults": [
+      {
+       "name": "maxItems",
+       "errors": [
+        "maximum constraint added when there was none previously : 10"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.name": [
+    },
     {
-     "name": "maxLength",
-     "errors": [
-      "maximum constraint added when there was none previously : 10"
+     "property": "^.spec.name",
+     "comparisonResults": [
+      {
+       "name": "maxLength",
+       "errors": [
+        "maximum constraint added when there was none previously : 10"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.size": [
+    },
     {
-     "name": "maximum",
-     "errors": [
-      "maximum constraint added when there was none previously : 10"
+     "property": "^.spec.size",
+     "comparisonResults": [
+      {
+       "name": "maximum",
+       "errors": [
+        "maximum constraint added when there was none previously : 10"
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }

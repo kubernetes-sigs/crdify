@@ -1,38 +1,53 @@
 {
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec.config": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "maxProperties",
-     "errors": [
-      "maximum decreased : 10 -\u003e 5"
+     "property": "^.spec.config",
+     "comparisonResults": [
+      {
+       "name": "maxProperties",
+       "errors": [
+        "maximum decreased : 10 -\u003e 5"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.containerPorts": [
+    },
     {
-     "name": "maxItems",
-     "errors": [
-      "maximum decreased : 10 -\u003e 5"
+     "property": "^.spec.containerPorts",
+     "comparisonResults": [
+      {
+       "name": "maxItems",
+       "errors": [
+        "maximum decreased : 10 -\u003e 5"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.name": [
+    },
     {
-     "name": "maxLength",
-     "errors": [
-      "maximum decreased : 10 -\u003e 5"
+     "property": "^.spec.name",
+     "comparisonResults": [
+      {
+       "name": "maxLength",
+       "errors": [
+        "maximum decreased : 10 -\u003e 5"
+       ]
+      }
      ]
-    }
-   ],
-   "^.spec.size": [
+    },
     {
-     "name": "maximum",
-     "errors": [
-      "maximum decreased : 10 -\u003e 5"
+     "property": "^.spec.size",
+     "comparisonResults": [
+      {
+       "name": "maximum",
+       "errors": [
+        "maximum decreased : 10 -\u003e 5"
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }

@@ -22,13 +22,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/crdify/pkg/runner"
-	"sigs.k8s.io/crdify/pkg/slices"
+	crdifyslices "sigs.k8s.io/crdify/pkg/slices"
 	"sigs.k8s.io/crdify/pkg/validations"
+	"sigs.k8s.io/crdify/pkg/validators/version"
 )
 
 var (
@@ -284,7 +286,7 @@ func compareComparisonResultSemantic(a, b []validations.ComparisonResult) error 
 }
 
 func normalizeStringSlice(in ...string) []string {
-	return slices.Translate(normalizeWhitespace, in...)
+	return crdifyslices.Translate(normalizeWhitespace, in...)
 }
 
 // normalizeWhitespace normalizes a given string by splitting the
@@ -301,54 +303,62 @@ func normalizeWhitespace(in string) string {
 	return strings.Join(fields, "\n")
 }
 
-func compareVersionedComparisonResultsSemantic(a, b map[string]map[string][]validations.ComparisonResult) error {
+func compareVersionedComparisonResultsSemantic(a, b []version.VersionedPropertyComparisonResult) error {
 	aSet := sets.New[string]()
 	bSet := sets.New[string]()
 
-	for k := range a {
-		aSet.Insert(k)
+	for _, versionResult := range a {
+		aSet.Insert(versionResult.Version)
 	}
 
-	for k := range b {
-		bSet.Insert(k)
+	for _, versionResult := range b {
+		bSet.Insert(versionResult.Version)
 	}
 
 	if !aSet.Equal(bSet) {
 		return fmt.Errorf("expected version set %v does not match actual %v", aSet, bSet) //nolint:err113
 	}
 
-	for k, v := range b {
-		expect := a[k]
+	for _, v := range b {
+		ind := slices.IndexFunc(a, func(e version.VersionedPropertyComparisonResult) bool {
+			return e.Version == v.Version
+		})
 
-		if err := comparePropertyComparisonResultsSemantic(expect, v); err != nil {
-			return fmt.Errorf("comparing property validation results for version %q: %w", k, err)
+		expect := a[ind]
+
+		if err := comparePropertyComparisonResultsSemantic(expect.PropertyComparisons, v.PropertyComparisons); err != nil {
+			return fmt.Errorf("comparing property validation results for version %q: %w", v.Version, err)
 		}
 	}
 
 	return nil
 }
 
-func comparePropertyComparisonResultsSemantic(a, b map[string][]validations.ComparisonResult) error {
+func comparePropertyComparisonResultsSemantic(a, b []validations.PropertyComparisonResult) error {
 	aSet := sets.New[string]()
 	bSet := sets.New[string]()
 
-	for k := range a {
-		aSet.Insert(k)
+	for _, v := range a {
+		aSet.Insert(v.Property)
 	}
 
-	for k := range b {
-		bSet.Insert(k)
+	for _, v := range b {
+		bSet.Insert(v.Property)
 	}
 
 	if !aSet.Equal(bSet) {
 		return fmt.Errorf("expected property validation set %v does not match actual %v", aSet, bSet) //nolint:err113
 	}
 
-	for k, v := range b {
-		expect := a[k]
+	for _, v := range b {
+		ind := slices.IndexFunc(a, func(e validations.PropertyComparisonResult) bool {
+			return e.Property == v.Property
+		})
 
-		if err := compareComparisonResultSemantic(expect, v); err != nil {
-			return fmt.Errorf("comparing results for property %q: %w", k, err)
+		expect := a[ind]
+
+		if err := compareComparisonResultSemantic(expect.ComparisonResults, v.ComparisonResults); err != nil {
+			return fmt.Errorf("comparing results for property %q: %w", v.Property, err)
 		}
 	}
 

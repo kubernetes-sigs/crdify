@@ -1,0 +1,50 @@
+{
+ "crdValidation": [
+  {
+   "name": "scope",
+   "errors": [
+    "scope changed : \"Namespaced\" -\u003e \"Cluster\""
+   ]
+  }
+ ],
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec",
+     "comparisonResults": [
+      {
+       "name": "required",
+       "errors": [
+        "new required fields: [mode]"
+       ]
+      }
+     ]
+    },
+    {
+     "property": "^.spec.mode",
+     "comparisonResults": [
+      {
+       "name": "enum",
+       "errors": [
+        "allowed enum values added : [\"FooBar\"]"
+       ]
+      }
+     ]
+    },
+    {
+     "property": "^.spec.size",
+     "comparisonResults": [
+      {
+       "name": "minimum",
+       "errors": [
+        "minimum increased : 1 -\u003e 10"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

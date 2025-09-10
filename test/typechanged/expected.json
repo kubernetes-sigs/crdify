@@ -1,20 +1,26 @@
 {
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec.containerPort": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "type",
-     "errors": [
-      "type changed : \"integer\" -\u003e \"string\""
-     ]
-    },
-    {
-     "name": "unhandled",
-     "errors": [
-      "unhandled changes found :\n  \u0026v1.JSONSchemaProps{\n  \t... // 3 identical fields\n  \tDescription: \"\",\n  \tType:        \"\",\n- \tFormat:      \"int32\",\n+ \tFormat:      \"\",\n  \tTitle:       \"\",\n  \tDefault:     nil,\n  \t... // 36 identical fields\n  }\n"
+     "property": "^.spec.containerPort",
+     "comparisonResults": [
+      {
+       "name": "type",
+       "errors": [
+        "type changed : \"integer\" -\u003e \"string\""
+       ]
+      },
+      {
+       "name": "unhandled",
+       "errors": [
+        "unhandled changes found :\n  \u0026v1.JSONSchemaProps{\n  \t... // 3 identical fields\n  \tDescription: \"\",\n  \tType:        \"\",\n- \tFormat:      \"int32\",\n+ \tFormat:      \"\",\n  \tTitle:       \"\",\n  \tDefault:     nil,\n  \t... // 36 identical fields\n  }\n"
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }

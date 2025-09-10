@@ -7,34 +7,40 @@
    ]
   }
  ],
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec.mode": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "enum",
-     "errors": [
-      "allowed enum values removed : [\"Managed\" \"Unmanaged\"]"
-     ]
-    },
-    {
-     "name": "type",
-     "errors": [
-      "type changed : \"string\" -\u003e \"\""
-     ]
-    },
-    {
-     "name": "description",
-     "errors": [
-      "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
-     ]
-    },
-    {
-     "name": "default",
-     "errors": [
-      "default value removed : \"\\\"Managed\\\"\""
+     "property": "^.spec.mode",
+     "comparisonResults": [
+      {
+       "name": "default",
+       "errors": [
+        "default value removed : \"\\\"Managed\\\"\""
+       ]
+      },
+      {
+       "name": "description",
+       "errors": [
+        "description changed : \"Mode in which the Memcached instances should be handled\" -\u003e \"\""
+       ]
+      },
+      {
+       "name": "enum",
+       "errors": [
+        "allowed enum values removed : [\"Managed\" \"Unmanaged\"]"
+       ]
+      },
+      {
+       "name": "type",
+       "errors": [
+        "type changed : \"string\" -\u003e \"\""
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }
