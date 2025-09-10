@@ -83,6 +83,7 @@ func TestOneOf(t *testing.T) {
 
 			if tt.expectError {
 				require.NotEmpty(t, result.Errors)
+
 				for _, msg := range tt.expectErrorMsgs {
 					require.Contains(t, result.Errors[0], msg)
 				}

@@ -42,12 +42,17 @@ func RegisterOneOf(registry validations.Registry) {
 // oneOfFactory initializes an OneOf validation from configuration.
 func oneOfFactory(cfg map[string]interface{}) (validations.Validation, error) {
 	oneOfCfg := &OneOfConfig{}
-	if err := ConfigToType(cfg, oneOfCfg); err != nil {
+
+	err := ConfigToType(cfg, oneOfCfg)
+	if err != nil {
 		return nil, fmt.Errorf("parsing config: %w", err)
 	}
-	if err := ValidateOneOfConfig(oneOfCfg); err != nil {
+
+	err = ValidateOneOfConfig(oneOfCfg)
+	if err != nil {
 		return nil, fmt.Errorf("validating oneOf config: %w", err)
 	}
+
 	return &OneOf{OneOfConfig: *oneOfCfg}, nil
 }
 
@@ -79,20 +84,24 @@ func (o *OneOf) SetEnforcement(policy config.EnforcementPolicy) {
 // Compare checks for incompatible changes in the oneOf constraint.
 func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
 	oldSubSchemas := sets.New[string]()
+
 	for _, schema := range a.OneOf {
 		marshalled, err := marshallSchema(schema)
 		if err != nil {
 			return validations.HandleErrors(o.Name(), o.enforcement, fmt.Errorf("failed to marshal old oneOf subschema: %w", err))
 		}
+
 		oldSubSchemas.Insert(marshalled)
 	}
 
 	newSubSchemas := sets.New[string]()
+
 	for _, schema := range b.OneOf {
 		marshalled, err := marshallSchema(schema)
 		if err != nil {
 			return validations.HandleErrors(o.Name(), o.enforcement, fmt.Errorf("failed to marshal new oneOf schema: %w", err))
 		}
+
 		newSubSchemas.Insert(marshalled)
 	}
 
@@ -129,11 +138,15 @@ func marshallSchema(schema apiextensionsv1.JSONSchemaProps) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal schema: %w", err)
 	}
+
 	return string(bytes), nil
 }
 
 var (
+	// ErrNetNewOneOfConstraint represents an error state where a new oneOf constraint where there was none previously.
 	ErrNetNewOneOfConstraint = errors.New("oneOf constraint added when there was none previously")
-	ErrRemovedOneOf          = errors.New("allowed oneOf schemas removed")
-	ErrAddedOneOf            = errors.New("allowed oneOf schemas added")
+	// ErrRemovedOneOf represents an error state where at least one previously allowed oneOf schema was removed.
+	ErrRemovedOneOf = errors.New("allowed oneOf schemas removed")
+	// ErrAddedOneOf represents an error state where at least one oneOf schema, that was not previously allowed, was added.
+	ErrAddedOneOf = errors.New("allowed oneOf schemas added")
 )
