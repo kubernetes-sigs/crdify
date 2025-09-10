@@ -18,6 +18,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/crdify/pkg/config"
 	"sigs.k8s.io/crdify/pkg/validations"
+	"sigs.k8s.io/crdify/pkg/validators/version"
 )
 
 // Validator validates Kubernetes CustomResourceDefinitions using the configured validations.
@@ -64,8 +65,8 @@ func New(opts ...ValidatorOption) *Validator {
 }
 
 // Validate runs the validations configured in the Validator.
-func (v *Validator) Validate(a, b *apiextensionsv1.CustomResourceDefinition) map[string]map[string][]validations.ComparisonResult {
-	result := map[string]map[string][]validations.ComparisonResult{}
+func (v *Validator) Validate(a, b *apiextensionsv1.CustomResourceDefinition) []version.VersionedPropertyComparisonResult {
+	result := []version.VersionedPropertyComparisonResult{}
 
 	for _, oldVersion := range a.Spec.Versions {
 		newVersion := validations.GetCRDVersionByName(b, oldVersion.Name)
@@ -79,7 +80,10 @@ func (v *Validator) Validate(a, b *apiextensionsv1.CustomResourceDefinition) map
 			continue
 		}
 
-		result[oldVersion.Name] = validations.CompareVersions(*oldVersion.DeepCopy(), *newVersion.DeepCopy(), v.unhandledEnforcement, v.comparators...)
+		result = append(result, version.VersionedPropertyComparisonResult{
+			Version:             oldVersion.Name,
+			PropertyComparisons: validations.CompareVersions(*oldVersion.DeepCopy(), *newVersion.DeepCopy(), v.unhandledEnforcement, v.comparators...),
+		})
 	}
 
 	return result

@@ -22,6 +22,7 @@ import (
 	versionhelper "k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/crdify/pkg/config"
 	"sigs.k8s.io/crdify/pkg/validations"
+	"sigs.k8s.io/crdify/pkg/validators/version"
 )
 
 // Validator validates Kubernetes CustomResourceDefinitions using the configured validations.
@@ -81,8 +82,8 @@ func New(opts ...ValidatorOption) *Validator {
 }
 
 // Validate runs the validations configured in the Validator.
-func (v *Validator) Validate(a, b *apiextensionsv1.CustomResourceDefinition) map[string]map[string][]validations.ComparisonResult {
-	result := map[string]map[string][]validations.ComparisonResult{}
+func (v *Validator) Validate(a, b *apiextensionsv1.CustomResourceDefinition) []version.VersionedPropertyComparisonResult {
+	result := []version.VersionedPropertyComparisonResult{}
 
 	// If conversion webhook is specified and conversion policy is ignore, pass check
 	if v.conversionPolicy == config.ConversionPolicyIgnore && b.Spec.Conversion != nil && b.Spec.Conversion.Strategy == apiextensionsv1.WebhookConverter {
@@ -91,16 +92,18 @@ func (v *Validator) Validate(a, b *apiextensionsv1.CustomResourceDefinition) map
 
 	aResults := v.compareVersionPairs(a)
 	bResults := v.compareVersionPairs(b)
-	subtractExistingIssues(bResults, aResults)
 
-	return bResults
+	return subtractExistingIssues(bResults, aResults)
 }
 
-func (v *Validator) compareVersionPairs(crd *apiextensionsv1.CustomResourceDefinition) map[string]map[string][]validations.ComparisonResult {
-	result := map[string]map[string][]validations.ComparisonResult{}
+func (v *Validator) compareVersionPairs(crd *apiextensionsv1.CustomResourceDefinition) []version.VersionedPropertyComparisonResult {
+	result := []version.VersionedPropertyComparisonResult{}
 
 	for resultVersionPair, versions := range makeVersionPairs(crd) {
-		result[resultVersionPair] = validations.CompareVersions(versions[0], versions[1], v.unhandledEnforcement, v.comparators...)
+		result = append(result, version.VersionedPropertyComparisonResult{
+			Version:             resultVersionPair,
+			PropertyComparisons: validations.CompareVersions(versions[0], versions[1], v.unhandledEnforcement, v.comparators...),
+		})
 	}
 
 	return result
@@ -142,64 +145,91 @@ func numUnidirectionalPermutations[T any](in []T) int {
 }
 
 // subtractExistingIssues removes errors and warnings from b's results that are also found in a's results.
-func subtractExistingIssues(b, a map[string]map[string][]validations.ComparisonResult) {
-	sliceToMapByName := func(in []validations.ComparisonResult) map[string]*validations.ComparisonResult {
-		out := make(map[string]*validations.ComparisonResult, len(in))
+func subtractExistingIssues(b, a []version.VersionedPropertyComparisonResult) []version.VersionedPropertyComparisonResult {
+	out := []version.VersionedPropertyComparisonResult{}
 
-		for i := range in {
-			v := &in[i]
-			out[v.Name] = v
-		}
+	for _, versionedPropertyComparisonResult := range b {
+		ind := slices.IndexFunc(a, func(e version.VersionedPropertyComparisonResult) bool {
+			return e.Version == versionedPropertyComparisonResult.Version
+		})
 
-		return out
-	}
-
-	for versionPair, bVersionPairResults := range b {
-		aVersionPairResults, ok := a[versionPair]
-		if !ok {
-			// If the version pair is not found in a, that means
-			// b introduced a new version, so we'll keep _all_
-			// of the comparison results for this pair
+		// if the comparison result isn't found in the known set,
+		// keep it and continue looping.
+		if ind == -1 {
+			out = append(out, versionedPropertyComparisonResult)
 			continue
 		}
 
-		for fieldPath, bFieldPathResults := range bVersionPairResults {
-			aFieldPathResults, ok := aVersionPairResults[fieldPath]
-			if !ok {
-				// If this field path is not found in a's results
-				// for this version pair, that means b introduced a new field
-				// in an existing schema, so we'll keep _all_ of the comparison
-				// results for this field path.
-				continue
-			}
+		out = append(out, filterKnownIssuesForVersionedPropertyComparisonResult(versionedPropertyComparisonResult, a[ind]))
+	}
 
-			aResultMap := sliceToMapByName(aFieldPathResults)
-			bResultMap := sliceToMapByName(bFieldPathResults)
+	return out
+}
 
-			for validationName, bValidationResult := range bResultMap {
-				aValidationResult, ok := aResultMap[validationName]
-				if !ok {
-					// If a's results do not include results for this validation,
-					// that means we ran a new validation for b that we did not
-					// run for a. We never intend to do that, so if that is somehow
-					// the case, let's panic and say what our programmer intent was.
-					panic(fmt.Sprintf("Validation %q not found in a's results for version pair %q. This should never happen because this validator uses the same validation configuration for CRDs a and b.", validationName, versionPair))
-				}
+func filterKnownIssuesForVersionedPropertyComparisonResult(b, a version.VersionedPropertyComparisonResult) version.VersionedPropertyComparisonResult {
+	return version.VersionedPropertyComparisonResult{
+		Version:             b.Version,
+		PropertyComparisons: filterKnownIssuesForPropertyComparisonResults(b.PropertyComparisons, a.PropertyComparisons),
+	}
+}
 
-				bValidationResult.Errors = slices.DeleteFunc(bValidationResult.Errors, func(bErr string) bool {
-					return slices.Contains(aValidationResult.Errors, bErr)
-				})
-				if len(bValidationResult.Errors) == 0 {
-					bValidationResult.Errors = nil
-				}
+func filterKnownIssuesForPropertyComparisonResults(b, a []validations.PropertyComparisonResult) []validations.PropertyComparisonResult {
+	out := []validations.PropertyComparisonResult{}
 
-				bValidationResult.Warnings = slices.DeleteFunc(bValidationResult.Warnings, func(bWarn string) bool {
-					return slices.Contains(aValidationResult.Warnings, bWarn)
-				})
-				if len(bValidationResult.Warnings) == 0 {
-					bValidationResult.Warnings = nil
-				}
-			}
+	for _, propertyComparisonResult := range b {
+		ind := slices.IndexFunc(a, func(e validations.PropertyComparisonResult) bool {
+			return e.Property == propertyComparisonResult.Property
+		})
+
+		// if the comparison result isn't found in the known set,
+		// keep it and continue looping.
+		if ind == -1 {
+			out = append(out, propertyComparisonResult)
+			continue
 		}
+
+		out = append(out, filterKnownIssuesForPropertyComparisonResult(propertyComparisonResult, a[ind]))
+	}
+
+	return out
+}
+
+func filterKnownIssuesForPropertyComparisonResult(b, a validations.PropertyComparisonResult) validations.PropertyComparisonResult {
+	return validations.PropertyComparisonResult{
+		Property:          b.Property,
+		ComparisonResults: filterKnownIssuesForComparisonResults(b.ComparisonResults, a.ComparisonResults),
+	}
+}
+
+func filterKnownIssuesForComparisonResults(b, a []validations.ComparisonResult) []validations.ComparisonResult {
+	out := []validations.ComparisonResult{}
+
+	for _, compResult := range b {
+		ind := slices.IndexFunc(a, func(e validations.ComparisonResult) bool {
+			return e.Name == compResult.Name
+		})
+
+		// if the comparison result isn't found in the known set,
+		// keep it and continue looping.
+		if ind == -1 {
+			out = append(out, compResult)
+			continue
+		}
+
+		out = append(out, filterKnownIssuesForComparisonResult(compResult, a[ind]))
+	}
+
+	return out
+}
+
+func filterKnownIssuesForComparisonResult(b, a validations.ComparisonResult) validations.ComparisonResult {
+	return validations.ComparisonResult{
+		Name: b.Name,
+		Errors: slices.DeleteFunc(b.Errors, func(e string) bool {
+			return slices.Contains(a.Errors, e)
+		}),
+		Warnings: slices.DeleteFunc(b.Warnings, func(e string) bool {
+			return slices.Contains(a.Warnings, e)
+		}),
 	}
 }

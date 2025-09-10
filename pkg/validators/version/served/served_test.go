@@ -247,8 +247,8 @@ func TestValidator_Validate_VersionPairs(t *testing.T) {
 
 			// Extract pair keys from result and compare
 			actualPairs := make([]string, 0, len(result))
-			for pair := range result {
-				actualPairs = append(actualPairs, pair)
+			for _, pair := range result {
+				actualPairs = append(actualPairs, pair.Version)
 			}
 
 			assert.ElementsMatch(t, tt.expectedPairs, actualPairs, "Version pairs don't match")
@@ -312,8 +312,8 @@ func TestValidator_Validate_EnforcementPolicies(t *testing.T) {
 
 			result := validator.Validate(crdA, crdB)
 			for _, versionPair := range result {
-				for _, fieldResults := range versionPair {
-					for _, compResult := range fieldResults {
+				for _, fieldResults := range versionPair.PropertyComparisons {
+					for _, compResult := range fieldResults.ComparisonResults {
 						tt.expectResultFn(t, compResult)
 					}
 				}
@@ -408,30 +408,22 @@ func TestValidator_Validate_SubtractExistingIssues(t *testing.T) {
 		},
 	}
 
-	// Verify structure matches expectations
-	for versionPair, expectedVersionResults := range expected {
-		actualVersionResults, exists := result[versionPair]
-		require.True(t, exists, "Expected version pair %s", versionPair)
+	for _, actualVersionResults := range result {
+		expectedPropertyResult, ok := expected[actualVersionResults.Version]
+		require.True(t, ok, "actual version result %s is unexpected", actualVersionResults.Version)
 
-		for fieldPath, expectedFieldResults := range expectedVersionResults {
-			actualFieldResults, exists := actualVersionResults[fieldPath]
-			require.True(t, exists, "Expected field path %s in %s", fieldPath, versionPair)
+		for _, actualPropertyResults := range actualVersionResults.PropertyComparisons {
+			expectedComparisons, ok := expectedPropertyResult[actualPropertyResults.Property]
+			require.True(t, ok, "actual version result %s has unexpected property %s", actualVersionResults.Version, actualPropertyResults.Property)
 
-			// Create map for easier lookup
-			actualByName := make(map[string]validations.ComparisonResult)
-			for _, comp := range actualFieldResults {
-				actualByName[comp.Name] = comp
-			}
+			for _, actualComparisonResult := range actualPropertyResults.ComparisonResults {
+				expectedComparison, ok := expectedComparisons[actualComparisonResult.Name]
+				require.True(t, ok, "actual version result %s with property %s has unexpected comparator %s", actualVersionResults.Version, actualPropertyResults.Property, actualComparisonResult.Name)
 
-			for comparatorName, expectedComp := range expectedFieldResults {
-				actualComp, exists := actualByName[comparatorName]
-				require.True(t, exists, "Expected comparator %s for %s in %s",
-					comparatorName, fieldPath, versionPair)
-
-				assert.Len(t, actualComp.Errors, expectedComp.ExpectedErrors,
-					"Wrong error count for %s/%s/%s", versionPair, fieldPath, comparatorName)
-				assert.Len(t, actualComp.Warnings, expectedComp.ExpectedWarnings,
-					"Wrong warning count for %s/%s/%s", versionPair, fieldPath, comparatorName)
+				assert.Len(t, actualComparisonResult.Errors, expectedComparison.ExpectedErrors,
+					"Wrong error count for %s/%s/%s", actualVersionResults.Version, actualPropertyResults.Property, actualComparisonResult.Name)
+				assert.Len(t, actualComparisonResult.Warnings, expectedComparison.ExpectedWarnings,
+					"Wrong warning count for %s/%s/%s", actualVersionResults.Version, actualPropertyResults.Property, actualComparisonResult.Name)
 			}
 		}
 	}
@@ -494,9 +486,8 @@ func TestValidator_Validate_EmptySchemas(t *testing.T) {
 	// Should have exactly one version pair: v1 -> v2
 	assert.Len(t, result, 1, "Expected exactly one version pair")
 
-	versionResults, exists := result["v1 -> v2"]
-	require.True(t, exists, "Expected v1 -> v2 version pair")
-	assert.Len(t, versionResults, 0, "Expected no version results")
+	require.True(t, result[0].Version == "v1 -> v2", "Expected v1 -> v2 version pair")
+	assert.Len(t, result[0].PropertyComparisons, 0, "Expected no version results")
 }
 
 func Test_numUnidirectionalPermutations(t *testing.T) {

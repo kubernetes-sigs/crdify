@@ -18,10 +18,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/crdify/pkg/validations"
+	"sigs.k8s.io/crdify/pkg/validators/version"
 )
 
 // Results is a utility type to hold the validation results of
@@ -35,13 +37,13 @@ type Results struct {
 	// results at the CustomResourceDefinition version level. Specifically
 	// for same version comparisons across an old and new CustomResourceDefinition
 	// instance (i.e comparing v1alpha1 with v1alpha1)
-	SameVersionValidation map[string]map[string][]validations.ComparisonResult `json:"sameVersionValidation,omitempty"`
+	SameVersionValidation []version.VersionedPropertyComparisonResult `json:"sameVersionValidation,omitempty"`
 
 	// ServedVersionValidation is the set of validation comparison
 	// results at the CustomResourceDefinition version level. Specifically
 	// for served version comparisons across an old and new CustomResourceDefinition
 	// instance (i.e comparing v1alpha1 with v1 if both are served)
-	ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
+	ServedVersionValidation []version.VersionedPropertyComparisonResult `json:"servedVersionValidation,omitempty"`
 }
 
 // MarshalJSON is a custom JSON marshalling function
@@ -50,54 +52,95 @@ type Results struct {
 // of information (warnings/errors).
 func (rr *Results) MarshalJSON() ([]byte, error) {
 	out := &struct {
-		CRDValidation           []validations.ComparisonResult                       `json:"crdValidation,omitempty"`
-		SameVersionValidation   map[string]map[string][]validations.ComparisonResult `json:"sameVersionValidation,omitempty"`
-		ServedVersionValidation map[string]map[string][]validations.ComparisonResult `json:"servedVersionValidation,omitempty"`
+		CRDValidation           []validations.ComparisonResult              `json:"crdValidation,omitempty"`
+		SameVersionValidation   []version.VersionedPropertyComparisonResult `json:"sameVersionValidation,omitempty"`
+		ServedVersionValidation []version.VersionedPropertyComparisonResult `json:"servedVersionValidation,omitempty"`
 	}{}
 
-	for _, result := range rr.CRDValidation {
-		if result.IsZero() {
-			continue
-		}
+	out.CRDValidation = slices.DeleteFunc(rr.CRDValidation, func(e validations.ComparisonResult) bool {
+		return e.IsZero()
+	})
+	slices.SortFunc(out.CRDValidation, func(a, b validations.ComparisonResult) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 
-		out.CRDValidation = append(out.CRDValidation, result)
-	}
-
-	out.SameVersionValidation = dropZeroResultsFromVersionedComparisonResults(rr.SameVersionValidation)
-	out.ServedVersionValidation = dropZeroResultsFromVersionedComparisonResults(rr.ServedVersionValidation)
+	out.SameVersionValidation = dropZeroVersionedPropertyComparisonResults(rr.SameVersionValidation...)
+	out.ServedVersionValidation = dropZeroVersionedPropertyComparisonResults(rr.ServedVersionValidation...)
 
 	return json.Marshal(out) //nolint:wrapcheck
 }
 
-// dropZeroResultsFromVersionedComparisonResults is a utility
-// function for dropping any results from a versioned comparison result
-// that does not contain any additional information (warnings/errors),
-// which is useful for only rendering the exact validations
-// that failed/warned.
-func dropZeroResultsFromVersionedComparisonResults(versionedComparisonResults map[string]map[string][]validations.ComparisonResult) map[string]map[string][]validations.ComparisonResult {
-	versionMap := map[string]map[string][]validations.ComparisonResult{}
+func dropZeroVersionedPropertyComparisonResults(vpcrs ...version.VersionedPropertyComparisonResult) []version.VersionedPropertyComparisonResult {
+	out := []version.VersionedPropertyComparisonResult{}
 
-	for version, paths := range versionedComparisonResults {
-		pathMap := map[string][]validations.ComparisonResult{}
-
-		for path, comparisonResults := range paths {
-			results := []validations.ComparisonResult{}
-
-			for _, result := range comparisonResults {
-				if result.IsZero() {
-					continue
-				}
-
-				results = append(results, result)
-			}
-
-			pathMap[path] = results
+	for _, vpcr := range vpcrs {
+		if vpcr.IsZero() {
+			continue
 		}
 
-		versionMap[version] = pathMap
+		pcrs := dropZeroPropertyComparisonResults(vpcr.PropertyComparisons...)
+		if len(pcrs) == 0 {
+			continue
+		}
+
+		out = append(out, version.VersionedPropertyComparisonResult{
+			Version:             vpcr.Version,
+			PropertyComparisons: pcrs,
+		})
 	}
 
-	return versionMap
+	// sort for deterministic output
+	slices.SortFunc(out, func(a, b version.VersionedPropertyComparisonResult) int {
+		return strings.Compare(a.Version, b.Version)
+	})
+
+	return out
+}
+
+func dropZeroPropertyComparisonResults(pcrs ...validations.PropertyComparisonResult) []validations.PropertyComparisonResult {
+	out := []validations.PropertyComparisonResult{}
+
+	for _, pcr := range pcrs {
+		if pcr.IsZero() {
+			continue
+		}
+
+		crs := dropZeroComparisonResults(pcr.ComparisonResults...)
+		if len(crs) == 0 {
+			continue
+		}
+
+		out = append(out, validations.PropertyComparisonResult{
+			Property:          pcr.Property,
+			ComparisonResults: crs,
+		})
+	}
+
+	// sort for deterministic output
+	slices.SortFunc(out, func(a, b validations.PropertyComparisonResult) int {
+		return strings.Compare(a.Property, b.Property)
+	})
+
+	return out
+}
+
+func dropZeroComparisonResults(crs ...validations.ComparisonResult) []validations.ComparisonResult {
+	out := []validations.ComparisonResult{}
+
+	for _, cr := range crs {
+		if cr.IsZero() {
+			continue
+		}
+
+		out = append(out, cr)
+	}
+
+	// sort for deterministic output
+	slices.SortFunc(out, func(a, b validations.ComparisonResult) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return out
 }
 
 // Format is a representation of an output format.
@@ -153,58 +196,39 @@ func (rr *Results) RenderYAML() (string, error) {
 // RenderMarkdown returns a string of the results rendered as Markdown
 //
 //nolint:dupl
-func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
+func (rr *Results) RenderMarkdown() string {
 	var out strings.Builder
 
 	for _, result := range rr.CRDValidation {
-		if len(result.Errors) > 0 {
-			for _, err := range result.Errors {
-				out.WriteString(fmt.Sprintf("- **%s** - `ERROR` - %s\n", result.Name, err))
-			}
+		if result.IsZero() {
+			continue
 		}
 
-		if len(result.Warnings) > 0 {
-			for _, err := range result.Warnings {
-				out.WriteString(fmt.Sprintf("- **%s** - `WARNING` - %s\n", result.Name, err))
-			}
+		for _, err := range result.Errors {
+			out.WriteString(fmt.Sprintf("- **%s** - `ERROR` - %s\n", result.Name, err))
 		}
-	}
 
-	for version, result := range rr.SameVersionValidation {
-		for property, results := range result {
-			for _, propertyResult := range results {
-				if len(propertyResult.Errors) > 0 {
-					for _, err := range propertyResult.Errors {
-						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `ERROR` - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
-
-				if len(propertyResult.Warnings) > 0 {
-					for _, err := range propertyResult.Warnings {
-						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `WARNING` - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
-			}
+		for _, err := range result.Warnings {
+			out.WriteString(fmt.Sprintf("- **%s** - `WARNING` - %s\n", result.Name, err))
 		}
 	}
 
-	for version, result := range rr.ServedVersionValidation {
-		for property, results := range result {
-			for _, propertyResult := range results {
-				if len(propertyResult.Errors) > 0 {
-					for _, err := range propertyResult.Errors {
-						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `ERROR` - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
+	processFunc := func(version, property string, comparisonResult validations.ComparisonResult) {
+		if comparisonResult.IsZero() {
+			return
+		}
 
-				if len(propertyResult.Warnings) > 0 {
-					for _, err := range propertyResult.Warnings {
-						out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `WARNING` - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
-			}
+		for _, err := range comparisonResult.Errors {
+			out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `ERROR` - %s\n", version, property, comparisonResult.Name, err))
+		}
+
+		for _, err := range comparisonResult.Warnings {
+			out.WriteString(fmt.Sprintf("- **%s** - *%s* - %s - `WARNING` - %s\n", version, property, comparisonResult.Name, err))
 		}
 	}
+
+	processVersionedComparisonResults(rr.SameVersionValidation, processFunc)
+	processVersionedComparisonResults(rr.ServedVersionValidation, processFunc)
 
 	return out.String()
 }
@@ -212,60 +236,64 @@ func (rr *Results) RenderMarkdown() string { //nolint:gocognit,cyclop
 // RenderPlainText returns a string of the results rendered as PlainText
 //
 //nolint:dupl
-func (rr *Results) RenderPlainText() string { //nolint:gocognit,cyclop
+func (rr *Results) RenderPlainText() string {
 	var out strings.Builder
 
 	for _, result := range rr.CRDValidation {
-		if len(result.Errors) > 0 {
-			for _, err := range result.Errors {
-				out.WriteString(fmt.Sprintf("- %s - ERROR - %s\n", result.Name, err))
-			}
+		if result.IsZero() {
+			continue
 		}
 
-		if len(result.Warnings) > 0 {
-			for _, err := range result.Warnings {
-				out.WriteString(fmt.Sprintf("- %s - WARNING - %s\n", result.Name, err))
-			}
+		for _, err := range result.Errors {
+			out.WriteString(fmt.Sprintf("- %s - ERROR - %s\n", result.Name, err))
 		}
-	}
 
-	for version, result := range rr.SameVersionValidation {
-		for property, results := range result {
-			for _, propertyResult := range results {
-				if len(propertyResult.Errors) > 0 {
-					for _, err := range propertyResult.Errors {
-						out.WriteString(fmt.Sprintf("- %s - %s - %s - ERROR - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
-
-				if len(propertyResult.Warnings) > 0 {
-					for _, err := range propertyResult.Warnings {
-						out.WriteString(fmt.Sprintf("- %s - %s - %s - WARNING - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
-			}
+		for _, err := range result.Warnings {
+			out.WriteString(fmt.Sprintf("- %s - WARNING - %s\n", result.Name, err))
 		}
 	}
 
-	for version, result := range rr.ServedVersionValidation {
-		for property, results := range result {
-			for _, propertyResult := range results {
-				if len(propertyResult.Errors) > 0 {
-					for _, err := range propertyResult.Errors {
-						out.WriteString(fmt.Sprintf("- %s - %s - %s - ERROR - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
+	processFunc := func(version, property string, comparisonResult validations.ComparisonResult) {
+		if comparisonResult.IsZero() {
+			return
+		}
 
-				if len(propertyResult.Warnings) > 0 {
-					for _, err := range propertyResult.Warnings {
-						out.WriteString(fmt.Sprintf("- %s - %s - %s - WARNING - %s\n", version, property, propertyResult.Name, err))
-					}
-				}
-			}
+		for _, err := range comparisonResult.Errors {
+			out.WriteString(fmt.Sprintf("- %s - %s - %s - ERROR - %s\n", version, property, comparisonResult.Name, err))
+		}
+
+		for _, err := range comparisonResult.Warnings {
+			out.WriteString(fmt.Sprintf("- %s - %s - %s - WARNING - %s\n", version, property, comparisonResult.Name, err))
 		}
 	}
+
+	processVersionedComparisonResults(rr.SameVersionValidation, processFunc)
+	processVersionedComparisonResults(rr.ServedVersionValidation, processFunc)
 
 	return out.String()
+}
+
+func processVersionedComparisonResults(vcrs []version.VersionedPropertyComparisonResult, processFunc func(version, property string, comparisonResult validations.ComparisonResult)) {
+	// sort along the way for determinism
+	slices.SortFunc(vcrs, func(a, b version.VersionedPropertyComparisonResult) int {
+		return strings.Compare(a.Version, b.Version)
+	})
+
+	for _, versionResult := range vcrs {
+		slices.SortFunc(versionResult.PropertyComparisons, func(a, b validations.PropertyComparisonResult) int {
+			return strings.Compare(a.Property, b.Property)
+		})
+
+		for _, propertyResult := range versionResult.PropertyComparisons {
+			slices.SortFunc(propertyResult.ComparisonResults, func(a, b validations.ComparisonResult) int {
+				return strings.Compare(a.Name, b.Name)
+			})
+
+			for _, comparisonResult := range propertyResult.ComparisonResults {
+				processFunc(versionResult.Version, propertyResult.Property, comparisonResult)
+			}
+		}
+	}
 }
 
 // HasFailures returns a boolean signaling if any of the validation results contain any errors.
@@ -287,8 +315,8 @@ func (rr *Results) HasCRDValidationFailures() bool {
 // HasSameVersionValidationFailures returns a boolean signaling if the same version validations contain any errors.
 func (rr *Results) HasSameVersionValidationFailures() bool {
 	for _, versionResults := range rr.SameVersionValidation {
-		for _, propertyResults := range versionResults {
-			for _, result := range propertyResults {
+		for _, propertyResults := range versionResults.PropertyComparisons {
+			for _, result := range propertyResults.ComparisonResults {
 				if len(result.Errors) > 0 {
 					return true
 				}
@@ -302,8 +330,8 @@ func (rr *Results) HasSameVersionValidationFailures() bool {
 // HasServedVersionValidationFailures returns a boolean signaling if the served version validations contain any errors.
 func (rr *Results) HasServedVersionValidationFailures() bool {
 	for _, versionResults := range rr.ServedVersionValidation {
-		for _, propertyResults := range versionResults {
-			for _, result := range propertyResults {
+		for _, propertyResults := range versionResults.PropertyComparisons {
+			for _, result := range propertyResults.ComparisonResults {
 				if len(result.Errors) > 0 {
 					return true
 				}
