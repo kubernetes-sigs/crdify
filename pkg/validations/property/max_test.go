@@ -77,6 +77,57 @@ func TestMaximum(t *testing.T) {
 			Flagged:              false,
 			ComparableValidation: &Maximum{},
 		},
+		{
+			Name: "exclusiveMaximum changed from false to true, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Maximum:          ptr.To(10.0),
+				ExclusiveMaximum: false,
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Maximum:          ptr.To(10.0),
+				ExclusiveMaximum: true,
+			},
+			Flagged:              true,
+			ComparableValidation: &Maximum{},
+		},
+		{
+			Name: "exclusiveMaximum changed from true to false, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Maximum:          ptr.To(10.0),
+				ExclusiveMaximum: true,
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Maximum:          ptr.To(10.0),
+				ExclusiveMaximum: false,
+			},
+			Flagged:              false,
+			ComparableValidation: &Maximum{},
+		},
+		{
+			Name: "net new exclusiveMaximum, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Maximum: ptr.To(10.0),
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Maximum:          ptr.To(10.0),
+				ExclusiveMaximum: true,
+			},
+			Flagged:              true,
+			ComparableValidation: &Maximum{},
+		},
+		{
+			Name: "no diff exclusiveMaximum, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Maximum:          ptr.To(10.0),
+				ExclusiveMaximum: true,
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Maximum:          ptr.To(10.0),
+				ExclusiveMaximum: true,
+			},
+			Flagged:              false,
+			ComparableValidation: &Maximum{},
+		},
 	}
 
 	internaltesting.RunTestcases(t, testcases...)
