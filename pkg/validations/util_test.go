@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestFlattenedCRDVersionDiff(t *testing.T) {
@@ -171,6 +172,458 @@ func TestFlattenedCRDVersionDiff(t *testing.T) {
 			} else {
 				// If a diff is not expected, so there should not be one.
 				require.Len(t, diffs, 0)
+			}
+		})
+	}
+}
+
+func TestFlattenCRDVersion(t *testing.T) {
+	type testcase struct {
+		name         string
+		version      apiextensionsv1.CustomResourceDefinitionVersion
+		expectedKeys []string
+	}
+
+	testcases := []testcase{
+		{
+			name: "basic schema",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "string",
+									},
+									"fieldTwo": {
+										Type: "string",
+									},
+									"fieldThree": {
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"subfield": {
+												Type: "number",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldTwo",
+				"^.spec.fieldThree",
+				"^.spec.fieldThree.subfield",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with items",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "array",
+										Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+											Schema: &apiextensionsv1.JSONSchemaProps{
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"subfield": {
+														Type: "number",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.items.subfield",
+				"^.spec.fieldOne.items",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with items with JSONSchemas",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "array",
+										Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+											JSONSchemas: []apiextensionsv1.JSONSchemaProps{
+												{
+													Properties: map[string]apiextensionsv1.JSONSchemaProps{
+														"subfield": {
+															Type: "number",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.items[0].subfield",
+				"^.spec.fieldOne.items[0]",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with allOf",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										AllOf: []apiextensionsv1.JSONSchemaProps{
+											{
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": {
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.allOf[0]",
+				"^.spec.fieldOne.allOf[0].nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with anyOf",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										AnyOf: []apiextensionsv1.JSONSchemaProps{
+											{
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": {
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.anyOf[0]",
+				"^.spec.fieldOne.anyOf[0].nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with oneOf",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										OneOf: []apiextensionsv1.JSONSchemaProps{
+											{
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": {
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.oneOf[0]",
+				"^.spec.fieldOne.oneOf[0].nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with not",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										Not: &apiextensionsv1.JSONSchemaProps{
+											Type: "object",
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
+												"nested": {
+													Type: "string",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.not",
+				"^.spec.fieldOne.not.nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with additionalProperties",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										AdditionalProperties: &apiextensionsv1.JSONSchemaPropsOrBool{
+											Allows: true,
+											Schema: &apiextensionsv1.JSONSchemaProps{
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": {
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.additionalProperties",
+				"^.spec.fieldOne.additionalProperties.nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with patternProperties",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										PatternProperties: map[string]apiextensionsv1.JSONSchemaProps{
+											"pattern": {
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": {
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.patternProperties[pattern]",
+				"^.spec.fieldOne.patternProperties[pattern].nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with additionalItems",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										AdditionalItems: &apiextensionsv1.JSONSchemaPropsOrBool{
+											Allows: true,
+											Schema: &apiextensionsv1.JSONSchemaProps{
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": {
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.additionalItems",
+				"^.spec.fieldOne.additionalItems.nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with definitions",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										Definitions: apiextensionsv1.JSONSchemaDefinitions{
+											"thing": apiextensionsv1.JSONSchemaProps{
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"nested": {
+														Type: "string",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.definitions[thing]",
+				"^.spec.fieldOne.definitions[thing].nested",
+				"^.spec",
+				"^",
+			},
+		},
+		{
+			name: "schema with dependencies",
+			version: apiextensionsv1.CustomResourceDefinitionVersion{
+				Schema: &apiextensionsv1.CustomResourceValidation{
+					OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"fieldOne": {
+										Type: "object",
+										Dependencies: apiextensionsv1.JSONSchemaDependencies{
+											"dependencyOne": {
+												Schema: &apiextensionsv1.JSONSchemaProps{
+													Type: "object",
+													Properties: map[string]apiextensionsv1.JSONSchemaProps{
+														"nested": {
+															Type: "string",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{
+				"^.spec.fieldOne",
+				"^.spec.fieldOne.dependencies[dependencyOne].nested",
+				"^.spec.fieldOne.dependencies[dependencyOne]",
+				"^.spec",
+				"^",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := FlattenCRDVersion(tc.version)
+
+			actualSet := sets.New[string]()
+			for key := range out {
+				actualSet.Insert(key)
+			}
+
+			expectedSet := sets.New(tc.expectedKeys...)
+
+			if !expectedSet.Equal(actualSet) {
+				t.Fatalf("expectedKeys does not match actual keys - in actual but not expected: %v - in expected but not actual: %v", actualSet.Difference(expectedSet).UnsortedList(), expectedSet.Difference(actualSet).UnsortedList())
 			}
 		})
 	}
