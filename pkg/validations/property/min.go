@@ -54,6 +54,8 @@ var (
 	ErrNetNewMinimumConstraint = errors.New("minimum constraint added when there was none previously")
 	// ErrMinimumIncreased represents an error state where a minimum constaint on a property was increased.
 	ErrMinimumIncreased = errors.New("minimum increased")
+	// ErrExclusiveMinimumAdded represents an error state where an exclusiveMininum is added to a property.
+	ErrExclusiveMinimumAdded = errors.New("exclusiveMinimum added")
 )
 
 var (
@@ -97,12 +99,22 @@ func (m *Minimum) SetEnforcement(policy config.EnforcementPolicy) {
 // It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
 // to prevent unintentional modifications.
 func (m *Minimum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
-	err := MinVerification(a.Minimum, b.Minimum)
+	var errs []error
+
+	if err := MinVerification(a.Minimum, b.Minimum); err != nil {
+		errs = append(errs, err)
+	}
+
+	if !a.ExclusiveMinimum && b.ExclusiveMinimum {
+		errs = append(errs, ErrExclusiveMinimumAdded)
+	}
 
 	a.Minimum = nil
 	b.Minimum = nil
+	a.ExclusiveMinimum = false
+	b.ExclusiveMinimum = false
 
-	return validations.HandleErrors(m.Name(), m.enforcement, err)
+	return validations.HandleErrors(m.Name(), m.enforcement, errs...)
 }
 
 var (
