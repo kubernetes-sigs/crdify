@@ -124,3 +124,8 @@ Validates compatibility of changes to a property description. While most changes
 description of a property are _generally_ safe, it is important to note that changing
 the semantics of a field _is_ a breaking change as it breaks expectations clients/users
 have made about what configuring the property does.
+
+### anyOf
+Validates compatibility of changes to the anyOf property. Changing the anyOf property 
+in a way that alters the set of valid values for a property is considered a breaking 
+change, as it may impact client and user expectations about accepted input.
