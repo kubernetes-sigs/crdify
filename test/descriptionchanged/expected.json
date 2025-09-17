@@ -1,14 +1,20 @@
 {
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec.size": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "description",
-     "errors": [
-      "description changed : \"Size defines the number of Memcached instances\" -\u003e \"Size defines how big, in gigabytes, a Memcached database can be before being backed up\""
+     "property": "^.spec.size",
+     "comparisonResults": [
+      {
+       "name": "description",
+       "errors": [
+        "description changed : \"Size defines the number of Memcached instances\" -\u003e \"Size defines how big, in gigabytes, a Memcached database can be before being backed up\""
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }

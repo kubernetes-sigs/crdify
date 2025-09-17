@@ -24,21 +24,49 @@ import (
 	"sigs.k8s.io/crdify/pkg/config"
 )
 
+// PropertyComparisonResult represents the results
+// from running validations against a given property of
+// a CustomResourceDefinition.
+type PropertyComparisonResult struct {
+	// property is the property, represented
+	// as a simple JSON path, that the set of
+	// compatibility validation result applies to.
+	Property string `json:"property"`
+
+	// comparisonResults is the set of compatibility
+	// validation results for the property.
+	ComparisonResults []ComparisonResult `json:"comparisonResults,omitempty"`
+}
+
+// IsZero returns whether or not a PropertyComparisonResult
+// contains any compatibility validation results.
+// If it does contain validation results, it means
+// that some incompatibility was found and an error or warning
+// should be issued and returns `false`.
+// If it does not contain validation results,
+// no incompatibilities were found and returns `true`.
+func (pcr PropertyComparisonResult) IsZero() bool {
+	return len(pcr.ComparisonResults) == 0
+}
+
 // CompareVersions calculates the diff in the provided old and new CustomResourceDefinitionVersions and
 // compares the differing properties using the provided comparators.
 // An 'unhandled' comparator will be injected to evaluate any unhandled changes by the provided comparators
 // that will be enforced based on the provided unhandled enforcement policy.
 // Returns a map[string][]ComparisonResult, where the map key is the flattened property path (i.e ^.spec.foo.bar).
-func CompareVersions(a, b apiextensionsv1.CustomResourceDefinitionVersion, unhandledEnforcement config.EnforcementPolicy, comparators ...Comparator[apiextensionsv1.JSONSchemaProps]) map[string][]ComparisonResult {
+func CompareVersions(a, b apiextensionsv1.CustomResourceDefinitionVersion, unhandledEnforcement config.EnforcementPolicy, comparators ...Comparator[apiextensionsv1.JSONSchemaProps]) []PropertyComparisonResult {
 	oldFlattened := FlattenCRDVersion(a)
 	newFlattened := FlattenCRDVersion(b)
 
 	diffs := FlattenedCRDVersionDiff(oldFlattened, newFlattened)
 
-	result := map[string][]ComparisonResult{}
+	result := []PropertyComparisonResult{}
 
 	for property, diff := range diffs {
-		result[property] = CompareProperties(diff.Old, diff.New, unhandledEnforcement, comparators...)
+		result = append(result, PropertyComparisonResult{
+			Property:          property,
+			ComparisonResults: CompareProperties(diff.Old, diff.New, unhandledEnforcement, comparators...),
+		})
 	}
 
 	return result

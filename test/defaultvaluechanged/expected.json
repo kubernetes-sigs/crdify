@@ -1,14 +1,20 @@
 {
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec.mode": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "default",
-     "errors": [
-      "default value changed : \"\\\"Managed\\\"\" -\u003e \"\\\"Unmanaged\\\"\""
+     "property": "^.spec.mode",
+     "comparisonResults": [
+      {
+       "name": "default",
+       "errors": [
+        "default value changed : \"\\\"Managed\\\"\" -\u003e \"\\\"Unmanaged\\\"\""
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }

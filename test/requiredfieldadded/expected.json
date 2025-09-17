@@ -1,14 +1,20 @@
 {
- "sameVersionValidation": {
-  "v1alpha1": {
-   "^.spec": [
+ "sameVersionValidation": [
+  {
+   "version": "v1alpha1",
+   "propertyComparisons": [
     {
-     "name": "required",
-     "errors": [
-      "new required fields: [mode]"
+     "property": "^.spec",
+     "comparisonResults": [
+      {
+       "name": "required",
+       "errors": [
+        "new required fields: [mode]"
+       ]
+      }
      ]
     }
    ]
   }
- }
+ ]
 }
