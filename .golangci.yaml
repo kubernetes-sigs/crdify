@@ -10,7 +10,6 @@ linters:
     - contextcheck
     - cyclop
     - dogsled
-    - dupl
     - durationcheck
     - err113
     - errcheck
