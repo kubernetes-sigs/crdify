@@ -1,0 +1,20 @@
+{
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.code",
+     "comparisonResults": [
+      {
+       "name": "pattern",
+       "errors": [
+        "pattern changed : \"^[a-z]+$\" -\u003e \"^[A-Z]+$\""
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
