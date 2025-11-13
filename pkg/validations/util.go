@@ -272,7 +272,7 @@ func LoadValidationsFromRegistry(registry Registry) (map[string]Validation, erro
 }
 
 // ConfigureValidations is a utility function for configuring the provided set of validations
-// using the provided registyr and configuration.
+// using the provided registry and configuration.
 // It returns a copy of the original validations mapping with validations that had specific
 // configurations replaced with a newly initialized validation.
 // Any errors encountered during the initialization process are aggregated and returned as a single error.
