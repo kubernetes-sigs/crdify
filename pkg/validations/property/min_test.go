@@ -77,6 +77,57 @@ func TestMinimum(t *testing.T) {
 			Flagged:              false,
 			ComparableValidation: &Minimum{},
 		},
+		{
+			Name: "exclusiveMinimum changed from false to true, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Minimum:          ptr.To(10.0),
+				ExclusiveMinimum: false,
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Minimum:          ptr.To(10.0),
+				ExclusiveMinimum: true,
+			},
+			Flagged:              true,
+			ComparableValidation: &Minimum{},
+		},
+		{
+			Name: "exclusiveMinimum changed from true to false, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Minimum:          ptr.To(10.0),
+				ExclusiveMinimum: true,
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Minimum:          ptr.To(10.0),
+				ExclusiveMinimum: false,
+			},
+			Flagged:              false,
+			ComparableValidation: &Minimum{},
+		},
+		{
+			Name: "net new exclusiveMinimum, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Minimum: ptr.To(10.0),
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Minimum:          ptr.To(10.0),
+				ExclusiveMinimum: true,
+			},
+			Flagged:              true,
+			ComparableValidation: &Minimum{},
+		},
+		{
+			Name: "no diff exclusiveMinimum, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Minimum:          ptr.To(10.0),
+				ExclusiveMinimum: true,
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				Minimum:          ptr.To(10.0),
+				ExclusiveMinimum: true,
+			},
+			Flagged:              false,
+			ComparableValidation: &Minimum{},
+		},
 	}
 
 	internaltesting.RunTestcases(t, testcases...)
