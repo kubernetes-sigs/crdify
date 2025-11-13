@@ -54,6 +54,8 @@ var (
 	ErrNetNewMaximumConstraint = errors.New("maximum constraint added when there was none previously")
 	// ErrMaximumIncreased represents an error state where a maximum constaint on a property was decreased.
 	ErrMaximumIncreased = errors.New("maximum decreased")
+	// ErrExclusiveMaximumAdded represents an error state where an exclusiveMaximum is added to a property.
+	ErrExclusiveMaximumAdded = errors.New("exclusiveMaximum added")
 )
 
 var (
@@ -97,12 +99,23 @@ func (m *Maximum) SetEnforcement(policy config.EnforcementPolicy) {
 // It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
 // to prevent unintentional modifications.
 func (m *Maximum) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
+	var errs []error
+
 	err := MaxVerification(a.Maximum, b.Maximum)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if !a.ExclusiveMaximum && b.ExclusiveMaximum {
+		errs = append(errs, ErrExclusiveMaximumAdded)
+	}
 
 	a.Maximum = nil
 	b.Maximum = nil
+	a.ExclusiveMaximum = false
+	b.ExclusiveMaximum = false
 
-	return validations.HandleErrors(m.Name(), m.enforcement, err)
+	return validations.HandleErrors(m.Name(), m.enforcement, errs...)
 }
 
 var (
