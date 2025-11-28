@@ -4,18 +4,12 @@
    "version": "v1alpha1",
    "propertyComparisons": [
     {
-     "property": "^.spec.containerPort",
+     "property": "^.spec.color",
      "comparisonResults": [
       {
        "name": "format",
        "errors": [
-        "format changed : \"int32\" -\u003e \"\""
-       ]
-      },
-      {
-       "name": "type",
-       "errors": [
-        "type changed : \"integer\" -\u003e \"string\""
+        "format changed : \"hexcolor\" -\u003e \"rgbcolor\""
        ]
       }
      ]

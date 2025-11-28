@@ -124,3 +124,9 @@ Validates compatibility of changes to a property description. While most changes
 description of a property are _generally_ safe, it is important to note that changing
 the semantics of a field _is_ a breaking change as it breaks expectations clients/users
 have made about what configuring the property does.
+
+### format
+
+Validates compatibility of changes to a property's format. Changing the format of a property
+generally results in a change to the validation performed on the property values and is a
+breaking change for clients/users existing expectations based on the previous format. 
