@@ -2,3 +2,4 @@
 - [Getting Started](getting-started.md)
 - [Validations](validations.md)
 - [Configuration](configuration.md)
+- [Go Library](go-library.md)
