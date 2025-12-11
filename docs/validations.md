@@ -124,3 +124,9 @@ Validates compatibility of changes to a property description. While most changes
 description of a property are _generally_ safe, it is important to note that changing
 the semantics of a field _is_ a breaking change as it breaks expectations clients/users
 have made about what configuring the property does.
+
+### pattern
+
+Validates compatibility of changes to a property's pattern regular expression. Adding a pattern
+that did not previously exist or modifying the expression can tighten validation, so these changes
+are flagged for review. Removing a pattern is accepted because it broadens what values are allowed.
