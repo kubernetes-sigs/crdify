@@ -42,6 +42,7 @@ func init() {
 	property.RegisterRequired(defaultRegistry)
 	property.RegisterType(defaultRegistry)
 	property.RegisterDescription(defaultRegistry)
+	property.RegisterNot(defaultRegistry)
 }
 
 // DefaultRegistry returns a pre-configured validations.Registry.
