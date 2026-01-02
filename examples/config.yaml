@@ -6,3 +6,8 @@ validations:
     enforcement: Error
     configuration:
       additionPolicy: Allow
+  # example of configuring pattern validation to allow removal of pattern constraints
+  - name: pattern
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow

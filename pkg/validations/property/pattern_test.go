@@ -55,13 +55,24 @@ func TestPattern(t *testing.T) {
 			ComparableValidation: &Pattern{},
 		},
 		{
-			Name: "pattern removed, not flagged",
+			Name: "pattern removed, flagged by default",
 			Old: &apiextensionsv1.JSONSchemaProps{
 				Pattern: "^[a-z]+$",
 			},
 			New:                  &apiextensionsv1.JSONSchemaProps{},
-			Flagged:              false,
+			Flagged:              true,
 			ComparableValidation: &Pattern{},
+		},
+		{
+			Name: "pattern removed, allowed via config",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Pattern: "^[a-z]+$",
+			},
+			New:     &apiextensionsv1.JSONSchemaProps{},
+			Flagged: false,
+			ComparableValidation: &Pattern{
+				PatternConfig: PatternConfig{RemovalPolicy: PatternRemovalPolicyAllow},
+			},
 		},
 		{
 			Name: "different field changed, not flagged",

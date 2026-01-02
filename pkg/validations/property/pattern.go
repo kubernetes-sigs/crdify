@@ -38,13 +38,63 @@ func RegisterPattern(registry validations.Registry) {
 
 // patternFactory is a function used to initialize a Pattern validation
 // implementation based on the provided configuration.
-func patternFactory(_ map[string]interface{}) (validations.Validation, error) {
-	return &Pattern{}, nil
+func patternFactory(cfg map[string]interface{}) (validations.Validation, error) {
+	patternCfg := &PatternConfig{}
+
+	err := ConfigToType(cfg, patternCfg)
+	if err != nil {
+		return nil, fmt.Errorf("parsing config: %w", err)
+	}
+
+	err = ValidatePatternConfig(patternCfg)
+	if err != nil {
+		return nil, fmt.Errorf("validating pattern config: %w", err)
+	}
+
+	return &Pattern{PatternConfig: *patternCfg}, nil
+}
+
+// ValidatePatternConfig ensures provided PatternConfig is valid and defaults missing values.
+func ValidatePatternConfig(in *PatternConfig) error {
+	if in == nil {
+		return nil
+	}
+
+	switch in.RemovalPolicy {
+	case PatternRemovalPolicyAllow, PatternRemovalPolicyDisallow:
+		// valid entries
+	case PatternRemovalPolicy(""):
+		in.RemovalPolicy = PatternRemovalPolicyDisallow
+	default:
+		return fmt.Errorf("%w : %q", errUnknownPatternRemovalPolicy, in.RemovalPolicy)
+	}
+
+	return nil
+}
+
+var errUnknownPatternRemovalPolicy = errors.New("unknown removal policy")
+
+// PatternRemovalPolicy represents how removing a pattern constraint should be evaluated.
+type PatternRemovalPolicy string
+
+const (
+	// PatternRemovalPolicyAllow treats removing a pattern constraint as compatible.
+	PatternRemovalPolicyAllow PatternRemovalPolicy = "Allow"
+	// PatternRemovalPolicyDisallow treats removing a pattern constraint as incompatible.
+	PatternRemovalPolicyDisallow PatternRemovalPolicy = "Disallow"
+)
+
+// PatternConfig contains additional configuration for the Pattern validation.
+type PatternConfig struct {
+	// RemovalPolicy dictates whether removing a pattern constraint is compatible.
+	// Allowed values are Allow and Disallow. Defaults to Disallow.
+	RemovalPolicy PatternRemovalPolicy `json:"removalPolicy,omitempty"`
 }
 
 // Pattern is a Validation that can be used to identify
 // incompatible changes to the pattern constraints of CRD properties.
 type Pattern struct {
+	PatternConfig
 	enforcement config.EnforcementPolicy
 }
 
@@ -71,9 +121,9 @@ func (p *Pattern) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Com
 		// nothing to do
 	case a.Pattern == "" && b.Pattern != "":
 		err = fmt.Errorf("%w : %q -> %q", ErrPatternAdded, a.Pattern, b.Pattern)
-	case a.Pattern != "" && b.Pattern == "":
-		// removing a pattern is considered safe
-	case a.Pattern != b.Pattern:
+	case a.Pattern != "" && b.Pattern == "" && p.RemovalPolicy != PatternRemovalPolicyAllow:
+		err = fmt.Errorf("%w : %q -> %q", ErrPatternRemoved, a.Pattern, b.Pattern)
+	case a.Pattern != "" && b.Pattern != "" && a.Pattern != b.Pattern:
 		err = fmt.Errorf("%w : %q -> %q", ErrPatternChanged, a.Pattern, b.Pattern)
 	}
 
@@ -88,3 +138,6 @@ var ErrPatternAdded = errors.New("pattern added")
 
 // ErrPatternChanged represents an error state when a property Pattern changed.
 var ErrPatternChanged = errors.New("pattern changed")
+
+// ErrPatternRemoved represents an error state when a property Pattern was removed.
+var ErrPatternRemoved = errors.New("pattern removed")
