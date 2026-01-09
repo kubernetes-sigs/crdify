@@ -66,7 +66,7 @@ func ValidatePatternConfig(in *PatternConfig) error {
 	case PatternRemovalPolicy(""):
 		in.RemovalPolicy = PatternRemovalPolicyDisallow
 	default:
-		return fmt.Errorf("%w : %q", errUnknownPatternRemovalPolicy, in.RemovalPolicy)
+		return fmt.Errorf("%w : %q (valid values: %q, %q)", errUnknownPatternRemovalPolicy, in.RemovalPolicy, PatternRemovalPolicyAllow, PatternRemovalPolicyDisallow)
 	}
 
 	return nil

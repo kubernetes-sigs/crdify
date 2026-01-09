@@ -15,6 +15,7 @@
 package property
 
 import (
+	"errors"
 	"testing"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -88,4 +89,43 @@ func TestPattern(t *testing.T) {
 	}
 
 	internaltesting.RunTestcases(t, testcases...)
+}
+
+func TestValidatePatternConfig(t *testing.T) {
+	t.Run("nil config", func(t *testing.T) {
+		if err := ValidatePatternConfig(nil); err != nil {
+			t.Fatalf("ValidatePatternConfig(nil) returned error: %v", err)
+		}
+	})
+
+	t.Run("defaults removal policy", func(t *testing.T) {
+		cfg := &PatternConfig{}
+		if err := ValidatePatternConfig(cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.RemovalPolicy != PatternRemovalPolicyDisallow {
+			t.Fatalf("expected default removal policy %q, got %q", PatternRemovalPolicyDisallow, cfg.RemovalPolicy)
+		}
+	})
+
+	t.Run("allows valid removal policy", func(t *testing.T) {
+		cfg := &PatternConfig{RemovalPolicy: PatternRemovalPolicyAllow}
+		if err := ValidatePatternConfig(cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.RemovalPolicy != PatternRemovalPolicyAllow {
+			t.Fatalf("expected removal policy to remain %q, got %q", PatternRemovalPolicyAllow, cfg.RemovalPolicy)
+		}
+	})
+
+	t.Run("invalid removal policy mentions valid values", func(t *testing.T) {
+		cfg := &PatternConfig{RemovalPolicy: "invalid"}
+		err := ValidatePatternConfig(cfg)
+		if err == nil {
+			t.Fatalf("expected error, got nil")
+		}
+		if !errors.Is(err, errUnknownPatternRemovalPolicy) {
+			t.Fatalf("expected errUnknownPatternRemovalPolicy, got %v", err)
+		}
+	})
 }
