@@ -92,40 +92,51 @@ func TestPattern(t *testing.T) {
 }
 
 func TestValidatePatternConfig(t *testing.T) {
-	t.Run("nil config", func(t *testing.T) {
-		if err := ValidatePatternConfig(nil); err != nil {
-			t.Fatalf("ValidatePatternConfig(nil) returned error: %v", err)
-		}
-	})
+	testcases := []struct {
+		name              string
+		cfg               *PatternConfig
+		wantErr           error
+		wantRemovalPolicy PatternRemovalPolicy
+	}{
+		{
+			name: "nil config",
+			cfg:  nil,
+		},
+		{
+			name:              "defaults removal policy",
+			cfg:               &PatternConfig{},
+			wantRemovalPolicy: PatternRemovalPolicyDisallow,
+		},
+		{
+			name:              "allows valid removal policy",
+			cfg:               &PatternConfig{RemovalPolicy: PatternRemovalPolicyAllow},
+			wantRemovalPolicy: PatternRemovalPolicyAllow,
+		},
+		{
+			name:    "invalid removal policy mentions valid values",
+			cfg:     &PatternConfig{RemovalPolicy: "invalid"},
+			wantErr: errUnknownPatternRemovalPolicy,
+		},
+	}
 
-	t.Run("defaults removal policy", func(t *testing.T) {
-		cfg := &PatternConfig{}
-		if err := ValidatePatternConfig(cfg); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if cfg.RemovalPolicy != PatternRemovalPolicyDisallow {
-			t.Fatalf("expected default removal policy %q, got %q", PatternRemovalPolicyDisallow, cfg.RemovalPolicy)
-		}
-	})
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidatePatternConfig(tc.cfg)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+				}
+				return
+			}
 
-	t.Run("allows valid removal policy", func(t *testing.T) {
-		cfg := &PatternConfig{RemovalPolicy: PatternRemovalPolicyAllow}
-		if err := ValidatePatternConfig(cfg); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if cfg.RemovalPolicy != PatternRemovalPolicyAllow {
-			t.Fatalf("expected removal policy to remain %q, got %q", PatternRemovalPolicyAllow, cfg.RemovalPolicy)
-		}
-	})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	t.Run("invalid removal policy mentions valid values", func(t *testing.T) {
-		cfg := &PatternConfig{RemovalPolicy: "invalid"}
-		err := ValidatePatternConfig(cfg)
-		if err == nil {
-			t.Fatalf("expected error, got nil")
-		}
-		if !errors.Is(err, errUnknownPatternRemovalPolicy) {
-			t.Fatalf("expected errUnknownPatternRemovalPolicy, got %v", err)
-		}
-	})
+			if tc.cfg != nil && tc.cfg.RemovalPolicy != tc.wantRemovalPolicy {
+				t.Fatalf("expected removal policy %q, got %q", tc.wantRemovalPolicy, tc.cfg.RemovalPolicy)
+			}
+		})
+	}
 }

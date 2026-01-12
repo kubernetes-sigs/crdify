@@ -192,40 +192,51 @@ func TestEnum(t *testing.T) {
 }
 
 func TestValidateEnumConfig(t *testing.T) {
-	t.Run("nil config", func(t *testing.T) {
-		if err := ValidateEnumConfig(nil); err != nil {
-			t.Fatalf("ValidateEnumConfig(nil) returned error: %v", err)
-		}
-	})
+	testcases := []struct {
+		name               string
+		cfg                *EnumConfig
+		wantErr            error
+		wantAdditionPolicy AdditionPolicy
+	}{
+		{
+			name: "nil config",
+			cfg:  nil,
+		},
+		{
+			name:               "defaults addition policy",
+			cfg:                &EnumConfig{},
+			wantAdditionPolicy: AdditionPolicyDisallow,
+		},
+		{
+			name:               "allows valid addition policies",
+			cfg:                &EnumConfig{AdditionPolicy: AdditionPolicyAllow},
+			wantAdditionPolicy: AdditionPolicyAllow,
+		},
+		{
+			name:    "invalid addition policy",
+			cfg:     &EnumConfig{AdditionPolicy: "invalid"},
+			wantErr: errUnknownAdditionPolicy,
+		},
+	}
 
-	t.Run("defaults addition policy", func(t *testing.T) {
-		cfg := &EnumConfig{}
-		if err := ValidateEnumConfig(cfg); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if cfg.AdditionPolicy != AdditionPolicyDisallow {
-			t.Fatalf("expected default addition policy %q, got %q", AdditionPolicyDisallow, cfg.AdditionPolicy)
-		}
-	})
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateEnumConfig(tc.cfg)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+				}
+				return
+			}
 
-	t.Run("allows valid addition policies", func(t *testing.T) {
-		cfg := &EnumConfig{AdditionPolicy: AdditionPolicyAllow}
-		if err := ValidateEnumConfig(cfg); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if cfg.AdditionPolicy != AdditionPolicyAllow {
-			t.Fatalf("expected addition policy to remain %q, got %q", AdditionPolicyAllow, cfg.AdditionPolicy)
-		}
-	})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	t.Run("invalid addition policy", func(t *testing.T) {
-		cfg := &EnumConfig{AdditionPolicy: "invalid"}
-		err := ValidateEnumConfig(cfg)
-		if err == nil {
-			t.Fatalf("expected error, got nil")
-		}
-		if !errors.Is(err, errUnknownAdditionPolicy) {
-			t.Fatalf("expected errUnknownAdditionPolicy, got %v", err)
-		}
-	})
+			if tc.cfg != nil && tc.cfg.AdditionPolicy != tc.wantAdditionPolicy {
+				t.Fatalf("expected addition policy %q, got %q", tc.wantAdditionPolicy, tc.cfg.AdditionPolicy)
+			}
+		})
+	}
 }

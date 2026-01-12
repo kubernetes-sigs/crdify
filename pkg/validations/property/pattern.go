@@ -123,7 +123,7 @@ func (p *Pattern) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Com
 		err = fmt.Errorf("%w : %q -> %q", ErrPatternAdded, a.Pattern, b.Pattern)
 	case a.Pattern != "" && b.Pattern == "" && p.RemovalPolicy != PatternRemovalPolicyAllow:
 		err = fmt.Errorf("%w : %q -> %q", ErrPatternRemoved, a.Pattern, b.Pattern)
-	case a.Pattern != "" && b.Pattern != "" && a.Pattern != b.Pattern:
+	case b.Pattern != "" && a.Pattern != b.Pattern:
 		err = fmt.Errorf("%w : %q -> %q", ErrPatternChanged, a.Pattern, b.Pattern)
 	}
 
