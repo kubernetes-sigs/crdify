@@ -227,6 +227,7 @@ func TestValidateEnumConfig(t *testing.T) {
 				if !errors.Is(err, tc.wantErr) {
 					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
 				}
+
 				return
 			}
 
