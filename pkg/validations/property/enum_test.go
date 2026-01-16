@@ -15,6 +15,7 @@
 package property
 
 import (
+	"errors"
 	"testing"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -188,4 +189,55 @@ func TestEnum(t *testing.T) {
 	}
 
 	internaltesting.RunTestcases(t, testcases...)
+}
+
+func TestValidateEnumConfig(t *testing.T) {
+	testcases := []struct {
+		name               string
+		cfg                *EnumConfig
+		wantErr            error
+		wantAdditionPolicy AdditionPolicy
+	}{
+		{
+			name: "nil config",
+			cfg:  nil,
+		},
+		{
+			name:               "defaults addition policy",
+			cfg:                &EnumConfig{},
+			wantAdditionPolicy: AdditionPolicyDisallow,
+		},
+		{
+			name:               "allows valid addition policies",
+			cfg:                &EnumConfig{AdditionPolicy: AdditionPolicyAllow},
+			wantAdditionPolicy: AdditionPolicyAllow,
+		},
+		{
+			name:    "invalid addition policy",
+			cfg:     &EnumConfig{AdditionPolicy: "invalid"},
+			wantErr: errUnknownAdditionPolicy,
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateEnumConfig(tc.cfg)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tc.cfg != nil && tc.cfg.AdditionPolicy != tc.wantAdditionPolicy {
+				t.Fatalf("expected addition policy %q, got %q", tc.wantAdditionPolicy, tc.cfg.AdditionPolicy)
+			}
+		})
+	}
 }

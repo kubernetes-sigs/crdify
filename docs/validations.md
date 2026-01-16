@@ -124,3 +124,27 @@ Validates compatibility of changes to a property description. While most changes
 description of a property are _generally_ safe, it is important to note that changing
 the semantics of a field _is_ a breaking change as it breaks expectations clients/users
 have made about what configuring the property does.
+
+### pattern
+
+Validates compatibility of changes to a property's pattern regular expression. Adding a pattern
+that did not previously exist or modifying the expression can tighten validation, so these changes
+are flagged for review.
+
+By default, removing a pattern is also considered incompatible.
+
+#### Configuration
+
+The `pattern` validation can be configured to allow removing an existing pattern when you know the change is safe:
+
+- `removalPolicy` - controls whether removing a pattern constraint is considered compatible. Allowed values are `Allow` and `Disallow`. When set to `Allow`, removing a pattern is not flagged. The default is `Disallow` to remain maximally conservative.
+
+Example configuration that allows removing patterns:
+
+```yaml
+validations:
+  - name: pattern
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow
+```
