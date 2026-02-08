@@ -11,3 +11,8 @@ validations:
     enforcement: Error
     configuration:
       removalPolicy: Allow
+  # example of configuring nullable validation to allow making a field nullable
+  - name: nullable
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
