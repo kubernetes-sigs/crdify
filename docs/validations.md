@@ -160,6 +160,7 @@ null always breaks backwards compatibility.
 The `nullable` validation can be configured to allow nulls as a compatible change when you are confident the API documentation explains how clients should handle missing values:
 
 - `additionPolicy` - controls whether allowing nulls when they were not previously permitted is considered compatible. Allowed values are `Allow` and `Disallow`. When set to `Allow`, the validation does not flag this change. The default is `Disallow` to ensure such changes are reviewed.
+- `removalPolicy` - controls whether disallowing nulls when they were previously permitted is considered compatible. Allowed values are `Allow` and `Disallow`. When set to `Allow`, the validation does not flag this change. The default is `Disallow` to protect clients that rely on nullable data.
 
 Example configuration that allows making a field nullable:
 
@@ -169,4 +170,14 @@ validations:
     enforcement: Error
     configuration:
       additionPolicy: Allow
+```
+
+Example configuration that allows removing nullable support:
+
+```yaml
+validations:
+  - name: nullable
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow
 ```

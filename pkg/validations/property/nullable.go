@@ -69,10 +69,20 @@ func ValidateNullableConfig(in *NullableConfig) error {
 		return fmt.Errorf("%w : %q (valid values: %q, %q)", errUnknownNullableAdditionPolicy, in.AdditionPolicy, NullableAdditionPolicyAllow, NullableAdditionPolicyDisallow)
 	}
 
+	switch in.RemovalPolicy {
+	case NullableRemovalPolicyAllow, NullableRemovalPolicyDisallow:
+		// valid entries
+	case NullableRemovalPolicy(""):
+		in.RemovalPolicy = NullableRemovalPolicyDisallow
+	default:
+		return fmt.Errorf("%w : %q (valid values: %q, %q)", errUnknownNullableRemovalPolicy, in.RemovalPolicy, NullableRemovalPolicyAllow, NullableRemovalPolicyDisallow)
+	}
+
 	return nil
 }
 
 var errUnknownNullableAdditionPolicy = errors.New("unknown addition policy")
+var errUnknownNullableRemovalPolicy = errors.New("unknown removal policy")
 
 // NullableAdditionPolicy represents how allowing null values should be evaluated.
 type NullableAdditionPolicy string
@@ -84,11 +94,24 @@ const (
 	NullableAdditionPolicyDisallow NullableAdditionPolicy = "Disallow"
 )
 
+// NullableRemovalPolicy represents how disallowing null values should be evaluated.
+type NullableRemovalPolicy string
+
+const (
+	// NullableRemovalPolicyAllow treats disallowing nulls when they were previously allowed as compatible.
+	NullableRemovalPolicyAllow NullableRemovalPolicy = "Allow"
+	// NullableRemovalPolicyDisallow treats disallowing nulls when they were previously allowed as incompatible.
+	NullableRemovalPolicyDisallow NullableRemovalPolicy = "Disallow"
+)
+
 // NullableConfig contains additional configuration for the Nullable validation.
 type NullableConfig struct {
 	// AdditionPolicy dictates whether allowing nulls when they were previously disallowed is compatible.
 	// Allowed values are Allow and Disallow. Defaults to Disallow.
 	AdditionPolicy NullableAdditionPolicy `json:"additionPolicy,omitempty"`
+	// RemovalPolicy dictates whether disallowing nulls when they were previously allowed is compatible.
+	// Allowed values are Allow and Disallow. Defaults to Disallow.
+	RemovalPolicy NullableRemovalPolicy `json:"removalPolicy,omitempty"`
 }
 
 // Nullable is a Validation that can be used to identify
@@ -121,7 +144,7 @@ func (n *Nullable) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Co
 		// nothing to do
 	case !a.Nullable && b.Nullable && n.AdditionPolicy != NullableAdditionPolicyAllow:
 		err = fmt.Errorf("%w : %t -> %t", ErrNullableAllowed, a.Nullable, b.Nullable)
-	case a.Nullable && !b.Nullable:
+	case a.Nullable && !b.Nullable && n.RemovalPolicy != NullableRemovalPolicyAllow:
 		err = fmt.Errorf("%w : %t -> %t", ErrNullableDisallowed, a.Nullable, b.Nullable)
 	}
 
@@ -132,7 +155,7 @@ func (n *Nullable) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Co
 }
 
 // ErrNullableAllowed represents an error state when a property transitions from not nullable to nullable.
-var ErrNullableAllowed = errors.New("nullable allowed")
+var ErrNullableAllowed = errors.New("nullable added")
 
 // ErrNullableDisallowed represents an error state when a property transitions from nullable to not nullable.
-var ErrNullableDisallowed = errors.New("nullable disallowed")
+var ErrNullableDisallowed = errors.New("nullable removed")

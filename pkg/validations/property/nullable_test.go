@@ -65,6 +65,17 @@ func TestNullable(t *testing.T) {
 			ComparableValidation: &Nullable{},
 		},
 		{
+			Name: "nullable removed allowed via config",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Nullable: true,
+			},
+			New:     &apiextensionsv1.JSONSchemaProps{},
+			Flagged: false,
+			ComparableValidation: &Nullable{
+				NullableConfig: NullableConfig{RemovalPolicy: NullableRemovalPolicyAllow},
+			},
+		},
+		{
 			Name: "different field changed, not flagged",
 			Old: &apiextensionsv1.JSONSchemaProps{
 				ID: "foo",
@@ -86,6 +97,7 @@ func TestValidateNullableConfig(t *testing.T) {
 		cfg           *NullableConfig
 		wantErr       error
 		wantAddPolicy NullableAdditionPolicy
+		wantRemPolicy NullableRemovalPolicy
 	}{
 		{
 			name: "nil config",
@@ -95,16 +107,29 @@ func TestValidateNullableConfig(t *testing.T) {
 			name:          "defaults addition policy",
 			cfg:           &NullableConfig{},
 			wantAddPolicy: NullableAdditionPolicyDisallow,
+			wantRemPolicy: NullableRemovalPolicyDisallow,
 		},
 		{
 			name:          "allows valid addition policy",
 			cfg:           &NullableConfig{AdditionPolicy: NullableAdditionPolicyAllow},
 			wantAddPolicy: NullableAdditionPolicyAllow,
+			wantRemPolicy: NullableRemovalPolicyDisallow,
 		},
 		{
 			name:    "invalid addition policy mentions valid values",
 			cfg:     &NullableConfig{AdditionPolicy: "invalid"},
 			wantErr: errUnknownNullableAdditionPolicy,
+		},
+		{
+			name:          "allows valid removal policy",
+			cfg:           &NullableConfig{RemovalPolicy: NullableRemovalPolicyAllow},
+			wantAddPolicy: NullableAdditionPolicyDisallow,
+			wantRemPolicy: NullableRemovalPolicyAllow,
+		},
+		{
+			name:    "invalid removal policy mentions valid values",
+			cfg:     &NullableConfig{RemovalPolicy: "invalid"},
+			wantErr: errUnknownNullableRemovalPolicy,
 		},
 	}
 
@@ -124,8 +149,16 @@ func TestValidateNullableConfig(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if tc.cfg != nil && tc.cfg.AdditionPolicy != tc.wantAddPolicy {
+			if tc.cfg == nil {
+				return
+			}
+
+			if tc.wantAddPolicy != "" && tc.cfg.AdditionPolicy != tc.wantAddPolicy {
 				t.Fatalf("expected addition policy %q, got %q", tc.wantAddPolicy, tc.cfg.AdditionPolicy)
+			}
+
+			if tc.wantRemPolicy != "" && tc.cfg.RemovalPolicy != tc.wantRemPolicy {
+				t.Fatalf("expected removal policy %q, got %q", tc.wantRemPolicy, tc.cfg.RemovalPolicy)
 			}
 		})
 	}

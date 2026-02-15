@@ -9,7 +9,7 @@
       {
        "name": "nullable",
        "errors": [
-        "nullable disallowed : true -\u003e false"
+        "nullable removed : true -\u003e false"
        ]
       }
      ]
