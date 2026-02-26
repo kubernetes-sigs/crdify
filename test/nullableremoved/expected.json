@@ -1,0 +1,20 @@
+{
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.code",
+     "comparisonResults": [
+      {
+       "name": "nullable",
+       "errors": [
+        "nullable removed : true -\u003e false"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
