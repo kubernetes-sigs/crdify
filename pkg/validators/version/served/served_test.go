@@ -429,6 +429,116 @@ func TestValidator_Validate_SubtractExistingIssues(t *testing.T) {
 	}
 }
 
+func TestValidator_Validate_AddOptionalFieldAndDescriptionChange(t *testing.T) {
+	// Reproduces the scenario from the RHDH operator upgrade bug where:
+	//   - v1alpha1 has {key, name} in an array items schema
+	//   - v1alpha3 adds an optional "mountPath" field and changes a description
+	// These are non-breaking, additive changes that must NOT be rejected.
+	descriptionComparator := &property.Description{}
+	descriptionComparator.SetEnforcement(config.EnforcementPolicyNone)
+
+	typeComparator := &property.Type{}
+	typeComparator.SetEnforcement(config.EnforcementPolicyError)
+
+	requiredComparator := &property.Required{}
+	requiredComparator.SetEnforcement(config.EnforcementPolicyError)
+
+	v1alpha1Schema := &apiextensionsv1.JSONSchemaProps{
+		Type: "object",
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
+			"spec": {
+				Type: "object",
+				Properties: map[string]apiextensionsv1.JSONSchemaProps{
+					"extraFiles": {
+						Type: "object",
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"secrets": {
+								Type: "array",
+								Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+									Schema: &apiextensionsv1.JSONSchemaProps{
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"key": {Type: "string", Description: "Key in the object"},
+											"name": {
+												Type:        "string",
+												Description: "Name of the object\nWe support only ConfigMaps and Secrets.",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	v1alpha3Schema := &apiextensionsv1.JSONSchemaProps{
+		Type: "object",
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
+			"spec": {
+				Type: "object",
+				Properties: map[string]apiextensionsv1.JSONSchemaProps{
+					"extraFiles": {
+						Type: "object",
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"secrets": {
+								Type: "array",
+								Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+									Schema: &apiextensionsv1.JSONSchemaProps{
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"key": {Type: "string", Description: "Key in the object"},
+											"name": {
+												Type:        "string",
+												Description: "Name of the object\nSupported ConfigMaps and Secrets",
+											},
+											"mountPath": {
+												Type:        "string",
+												Description: "Path to mount the Object. If not specified default-path/Name will be used",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Old CRD: both versions serve identical schemas (no cross-version diff).
+	oldCRD := createCRD(
+		withVersion("v1alpha1", true, v1alpha1Schema.DeepCopy()),
+		withVersion("v1alpha3", true, v1alpha1Schema.DeepCopy()),
+	)
+
+	// New CRD: v1alpha3 adds optional mountPath field and changes a description.
+	newCRD := createCRD(
+		withVersion("v1alpha1", true, v1alpha1Schema.DeepCopy()),
+		withVersion("v1alpha3", true, v1alpha3Schema.DeepCopy()),
+	)
+
+	validator := New(
+		WithComparators(typeComparator, descriptionComparator, requiredComparator),
+		WithUnhandledEnforcementPolicy(config.EnforcementPolicyError),
+	)
+
+	results := validator.Validate(oldCRD, newCRD)
+
+	for _, versionResult := range results {
+		for _, propResult := range versionResult.PropertyComparisons {
+			for _, compResult := range propResult.ComparisonResults {
+				assert.Empty(t, compResult.Errors,
+					"unexpected error for %s / %s / %s: %v",
+					versionResult.Version, propResult.Property, compResult.Name, compResult.Errors)
+			}
+		}
+	}
+}
+
 func TestValidator_New_DefaultValues(t *testing.T) {
 	validator := New()
 

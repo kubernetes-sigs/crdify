@@ -177,6 +177,133 @@ func TestFlattenedCRDVersionDiff(t *testing.T) {
 	}
 }
 
+func TestDropChildrenPropertiesFromJSONSchema(t *testing.T) {
+	schema := &apiextensionsv1.JSONSchemaProps{
+		Type:        "object",
+		Description: "top level",
+		Required:    []string{"foo"},
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
+			"foo": {Type: "string"},
+		},
+		Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+			Schema: &apiextensionsv1.JSONSchemaProps{Type: "string"},
+		},
+		AllOf: []apiextensionsv1.JSONSchemaProps{{Type: "object"}},
+		AnyOf: []apiextensionsv1.JSONSchemaProps{{Type: "string"}},
+		OneOf: []apiextensionsv1.JSONSchemaProps{{Type: "integer"}},
+		Not:   &apiextensionsv1.JSONSchemaProps{Type: "boolean"},
+		AdditionalProperties: &apiextensionsv1.JSONSchemaPropsOrBool{
+			Allows: true,
+			Schema: &apiextensionsv1.JSONSchemaProps{Type: "string"},
+		},
+		PatternProperties: map[string]apiextensionsv1.JSONSchemaProps{
+			"^x-": {Type: "string"},
+		},
+		AdditionalItems: &apiextensionsv1.JSONSchemaPropsOrBool{
+			Allows: true,
+			Schema: &apiextensionsv1.JSONSchemaProps{Type: "string"},
+		},
+		Definitions: apiextensionsv1.JSONSchemaDefinitions{
+			"thing": {Type: "object"},
+		},
+		Dependencies: apiextensionsv1.JSONSchemaDependencies{
+			"dep": {Schema: &apiextensionsv1.JSONSchemaProps{Type: "object"}},
+		},
+	}
+
+	result := DropChildrenPropertiesFromJSONSchema(schema)
+
+	require.Equal(t, "object", result.Type, "leaf field Type must be preserved")
+	require.Equal(t, "top level", result.Description, "leaf field Description must be preserved")
+	require.Equal(t, []string{"foo"}, result.Required, "leaf field Required must be preserved")
+
+	require.Nil(t, result.Properties, "Properties must be nil")
+	require.Nil(t, result.Items, "Items must be nil")
+	require.Nil(t, result.AllOf, "AllOf must be nil")
+	require.Nil(t, result.AnyOf, "AnyOf must be nil")
+	require.Nil(t, result.OneOf, "OneOf must be nil")
+	require.Nil(t, result.Not, "Not must be nil")
+	require.Nil(t, result.AdditionalProperties, "AdditionalProperties must be nil")
+	require.Nil(t, result.PatternProperties, "PatternProperties must be nil")
+	require.Nil(t, result.AdditionalItems, "AdditionalItems must be nil")
+	require.Nil(t, result.Definitions, "Definitions must be nil")
+	require.Nil(t, result.Dependencies, "Dependencies must be nil")
+
+	// Original must be unmodified.
+	require.NotNil(t, schema.Properties, "original Properties must not be nil")
+	require.NotNil(t, schema.Items, "original Items must not be nil")
+	require.NotNil(t, schema.AllOf, "original AllOf must not be nil")
+}
+
+func TestFlattenedCRDVersionDiff_AddOptionalField(t *testing.T) {
+	old := apiextensionsv1.CustomResourceDefinitionVersion{
+		Name:    "v1alpha1",
+		Served:  true,
+		Storage: true,
+		Schema: &apiextensionsv1.CustomResourceValidation{
+			OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+				Type: "object",
+				Properties: map[string]apiextensionsv1.JSONSchemaProps{
+					"spec": {
+						Type: "object",
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"secrets": {
+								Type: "array",
+								Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+									Schema: &apiextensionsv1.JSONSchemaProps{
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"key":  {Type: "string", Description: "Key in the object"},
+											"name": {Type: "string", Description: "Name of the object"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	updated := apiextensionsv1.CustomResourceDefinitionVersion{
+		Name:    "v1alpha1",
+		Served:  true,
+		Storage: true,
+		Schema: &apiextensionsv1.CustomResourceValidation{
+			OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+				Type: "object",
+				Properties: map[string]apiextensionsv1.JSONSchemaProps{
+					"spec": {
+						Type: "object",
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"secrets": {
+								Type: "array",
+								Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+									Schema: &apiextensionsv1.JSONSchemaProps{
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"key":       {Type: "string", Description: "Key in the object"},
+											"name":      {Type: "string", Description: "Name of the object"},
+											"mountPath": {Type: "string", Description: "Path to mount the Object"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	oldFlattened := FlattenCRDVersion(old)
+	newFlattened := FlattenCRDVersion(updated)
+	diffs := FlattenedCRDVersionDiff(oldFlattened, newFlattened)
+
+	require.Len(t, diffs, 0, "adding a new optional field must not produce any diff")
+}
+
 func TestFlattenCRDVersion(t *testing.T) {
 	type testcase struct {
 		name         string

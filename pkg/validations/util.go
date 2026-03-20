@@ -105,11 +105,23 @@ func FlattenedCRDVersionDiff(a, b map[string]*apiextensionsv1.JSONSchemaProps) m
 // differences between a before and after of a given schema
 // without the changes to its children schemas influencing the
 // diff calculation.
+// Every field that SchemaHas recursively walks must be nil'd here so
+// that child-level changes are evaluated only at their own flattened
+// paths and never bubble up as "unhandled" diffs at the parent level.
 // Returns a copy of the provided apiextensionsv1.JSONSchemaProps with children schemas dropped.
 func DropChildrenPropertiesFromJSONSchema(schema *apiextensionsv1.JSONSchemaProps) *apiextensionsv1.JSONSchemaProps {
 	schemaCopy := schema.DeepCopy()
 	schemaCopy.Properties = nil
 	schemaCopy.Items = nil
+	schemaCopy.AllOf = nil
+	schemaCopy.AnyOf = nil
+	schemaCopy.OneOf = nil
+	schemaCopy.Not = nil
+	schemaCopy.AdditionalProperties = nil
+	schemaCopy.PatternProperties = nil
+	schemaCopy.AdditionalItems = nil
+	schemaCopy.Definitions = nil
+	schemaCopy.Dependencies = nil
 
 	return schemaCopy
 }
