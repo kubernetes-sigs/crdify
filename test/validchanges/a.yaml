@@ -57,6 +57,13 @@ spec:
                 - "Managed"
                 - "Unmanaged"
                 default: "Managed"
+              things:
+                description: Things is a list of things
+                items:
+                  properties:
+                    name:
+                      description: name is the name of a thing
+                      type: string
             type: object
             required:
             - size

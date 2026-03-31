@@ -57,6 +57,17 @@ spec:
                 - "Managed"
                 - "Unmanaged"
                 default: "Managed"
+              things:
+                description: Things is a list of things
+                items:
+                  properties:
+                    name:
+                      description: name is the name of a thing
+                      type: string
+                    # New optional field within a list
+                    version:
+                      description: version is the version of a thing
+                      type: string
               # New optional field with no restrictions
               animal:
                 description: animal is the type of animal this instance represents
