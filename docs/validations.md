@@ -149,6 +149,45 @@ validations:
       removalPolicy: Allow
 ```
 
+### allOf
+
+Validates compatibility of changes to a property's `allOf` constraints. The `allOf` keyword
+requires a value to satisfy all of the listed subschemas. Adding new subschemas tightens
+validation and may invalidate previously valid values.
+
+Incompatible changes are:
+
+- Adding an `allOf` constraint when there was none previously
+- Adding new subschemas to an existing `allOf` constraint
+- Removing subschemas from an existing `allOf` constraint
+
+#### Configuration
+
+The `allOf` validation has unique configuration options that can be used to change how it determines compatibility of a change to `allOf` constraints on a property:
+
+- `additionPolicy` - used to configure how compatibility is determined when adding new subschemas to an existing `allOf` constraint. Allowed values are `Allow` and `Disallow`. When set to `Allow`, adding a new subschema is considered a compatible change. When set to `Disallow`, adding a new subschema is considered an incompatible change. The default is `Disallow`.
+- `removalPolicy` - used to configure how compatibility is determined when removing subschemas from an existing `allOf` constraint. Allowed values are `Allow` and `Disallow`. When set to `Allow`, removing a subschema is considered a compatible change. When set to `Disallow`, removing a subschema is considered an incompatible change. The default is `Disallow`.
+
+An example of configuring the `allOf` validation to allow adding a new subschema:
+
+```yaml
+validations:
+  - name: allOf
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
+```
+
+An example of configuring the `allOf` validation to allow removing a subschema:
+
+```yaml
+validations:
+  - name: allOf
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow
+```
+
 ### nullable
 
 Validates compatibility of changes to a property's nullable constraint. Allowing null values for a field
