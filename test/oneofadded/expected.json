@@ -1,0 +1,20 @@
+{
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.port",
+     "comparisonResults": [
+      {
+       "name": "oneOf",
+       "errors": [
+        "allowed oneOf schemas added: [{\"type\":\"string\"}]"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

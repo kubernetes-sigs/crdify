@@ -44,6 +44,7 @@ func init() {
 	property.RegisterDescription(defaultRegistry)
 	property.RegisterPattern(defaultRegistry)
 	property.RegisterNullable(defaultRegistry)
+	property.RegisterOneOf(defaultRegistry)
 }
 
 // DefaultRegistry returns a pre-configured validations.Registry.

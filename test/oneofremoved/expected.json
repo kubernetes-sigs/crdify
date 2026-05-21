@@ -1,0 +1,39 @@
+{
+ "crdValidation": [
+  {
+   "name": "existingFieldRemoval",
+   "errors": [
+    "removed field : v1.^.spec.port.oneOf[1]"
+   ]
+  }
+ ],
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.port",
+     "comparisonResults": [
+      {
+       "name": "oneOf",
+       "errors": [
+        "allowed oneOf schemas removed: [{\"type\":\"string\"}]"
+       ]
+      }
+     ]
+    },
+    {
+     "property": "^.spec.port.oneOf[1]",
+     "comparisonResults": [
+      {
+       "name": "type",
+       "errors": [
+        "type changed : \"string\" -> \"\""
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,26 @@
+{
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.port",
+     "comparisonResults": [
+      {
+       "name": "oneOf",
+       "errors": [
+        "oneOf constraint added when there was none previously: [{\"type\":\"integer\"} {\"type\":\"string\"}]"
+       ]
+      },
+      {
+       "name": "type",
+       "errors": [
+        "type changed : \"integer\" -> \"\""
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
