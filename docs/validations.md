@@ -197,6 +197,7 @@ Incompatible changes are:
 The `oneOf` validation has unique configuration options that can be used to change how it determines compatibility of a change to `oneOf` constraints on a property:
 
 - `additionPolicy` - used to configure how compatibility is determined when adding new subschemas to an existing `oneOf` constraint. Allowed values are `Allow` and `Disallow`. When set to `Allow`, adding a new subschema is considered a compatible change. When set to `Disallow`, adding a new subschema is considered an incompatible change. The default is `Disallow`.
+- `removalPolicy` - used to configure how compatibility is determined when removing subschemas from an existing `oneOf` constraint. Allowed values are `Allow` and `Disallow`. When set to `Allow`, removing a subschema is considered a compatible change. When set to `Disallow`, removing a subschema is considered an incompatible change. The default is `Disallow`.
 
 An example of configuring the `oneOf` validation to allow adding a new subschema:
 
@@ -206,4 +207,14 @@ validations:
     enforcement: Error
     configuration:
       additionPolicy: Allow
+```
+
+An example of configuring the `oneOf` validation to allow removing a subschema:
+
+```yaml
+validations:
+  - name: oneOf
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow
 ```

@@ -17,8 +17,9 @@ validations:
     configuration:
       additionPolicy: Allow
       removalPolicy: Allow
-  # example of configuring oneOf validation to allow addition of new subschemas
+  # example of configuring oneOf validation to allow addition of new subschemas and removal of existing subschemas
   - name: oneOf
     enforcement: Error
     configuration:
       additionPolicy: Allow
+      removalPolicy: Allow

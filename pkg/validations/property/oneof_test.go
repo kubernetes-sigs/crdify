@@ -68,7 +68,7 @@ func TestOneOf(t *testing.T) {
 			ComparableValidation: &OneOf{},
 		},
 		{
-			Name: "removed oneOf subschema, flagged",
+			Name: "removed oneOf subschema, removal policy not set, flagged",
 			Old: &apiextensionsv1.JSONSchemaProps{
 				OneOf: []apiextensionsv1.JSONSchemaProps{
 					{Type: "integer"},
@@ -82,6 +82,46 @@ func TestOneOf(t *testing.T) {
 			},
 			Flagged:              true,
 			ComparableValidation: &OneOf{},
+		},
+		{
+			Name: "removed oneOf subschema, removal policy set to Disallow, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{Type: "integer"},
+					{Type: "string"},
+				},
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{Type: "string"},
+				},
+			},
+			Flagged: true,
+			ComparableValidation: &OneOf{
+				OneOfConfig: OneOfConfig{
+					RemovalPolicy: RemovalPolicyDisallow,
+				},
+			},
+		},
+		{
+			Name: "removed oneOf subschema, removal policy set to Allow, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{Type: "integer"},
+					{Type: "string"},
+				},
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{Type: "string"},
+				},
+			},
+			Flagged: false,
+			ComparableValidation: &OneOf{
+				OneOfConfig: OneOfConfig{
+					RemovalPolicy: RemovalPolicyAllow,
+				},
+			},
 		},
 		{
 			Name: "new allowed oneOf subschema added, addition policy not set, flagged",
@@ -178,6 +218,7 @@ func TestValidateOneOfConfig(t *testing.T) {
 		cfg                *OneOfConfig
 		wantErr            error
 		wantAdditionPolicy AdditionPolicy
+		wantRemovalPolicy  RemovalPolicy
 	}{
 		{
 			name: "nil config",
@@ -187,16 +228,29 @@ func TestValidateOneOfConfig(t *testing.T) {
 			name:               "defaults addition policy",
 			cfg:                &OneOfConfig{},
 			wantAdditionPolicy: AdditionPolicyDisallow,
+			wantRemovalPolicy:  RemovalPolicyDisallow,
 		},
 		{
 			name:               "allows valid addition policies",
 			cfg:                &OneOfConfig{AdditionPolicy: AdditionPolicyAllow},
 			wantAdditionPolicy: AdditionPolicyAllow,
+			wantRemovalPolicy:  RemovalPolicyDisallow,
 		},
 		{
 			name:    "invalid addition policy",
 			cfg:     &OneOfConfig{AdditionPolicy: "invalid"},
 			wantErr: errUnknownAdditionPolicy,
+		},
+		{
+			name:               "allows valid removal policies",
+			cfg:                &OneOfConfig{RemovalPolicy: RemovalPolicyAllow},
+			wantAdditionPolicy: AdditionPolicyDisallow,
+			wantRemovalPolicy:  RemovalPolicyAllow,
+		},
+		{
+			name:    "invalid removal policy",
+			cfg:     &OneOfConfig{RemovalPolicy: "invalid"},
+			wantErr: errUnknownRemovalPolicy,
 		},
 	}
 
@@ -218,6 +272,10 @@ func TestValidateOneOfConfig(t *testing.T) {
 
 			if tc.cfg != nil && tc.cfg.AdditionPolicy != tc.wantAdditionPolicy {
 				t.Fatalf("expected addition policy %q, got %q", tc.wantAdditionPolicy, tc.cfg.AdditionPolicy)
+			}
+
+			if tc.cfg != nil && tc.cfg.RemovalPolicy != tc.wantRemovalPolicy {
+				t.Fatalf("expected removal policy %q, got %q", tc.wantRemovalPolicy, tc.cfg.RemovalPolicy)
 			}
 		})
 	}

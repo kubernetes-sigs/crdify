@@ -15,7 +15,6 @@
 package property
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -59,9 +58,6 @@ func oneOfFactory(cfg map[string]interface{}) (validations.Validation, error) {
 
 // ValidateOneOfConfig validates the provided OneOfConfig
 // setting default values where appropriate.
-// Currently the defaulting behavior defaults the
-// OneOfConfig.AdditionPolicy to AdditionPolicyDisallow
-// if it is set to the empty string ("").
 func ValidateOneOfConfig(in *OneOfConfig) error {
 	if in == nil {
 		return nil
@@ -76,8 +72,33 @@ func ValidateOneOfConfig(in *OneOfConfig) error {
 		return fmt.Errorf("%w : %q", errUnknownAdditionPolicy, in.AdditionPolicy)
 	}
 
+	switch in.RemovalPolicy {
+	case RemovalPolicyAllow, RemovalPolicyDisallow:
+		// do nothing, valid case
+	case RemovalPolicy(""):
+		in.RemovalPolicy = RemovalPolicyDisallow
+	default:
+		return fmt.Errorf("%w : %q", errUnknownRemovalPolicy, in.RemovalPolicy)
+	}
+
 	return nil
 }
+
+// RemovalPolicy is used to represent how a validation
+// should determine compatibility of removing existing constraints.
+type RemovalPolicy string
+
+const (
+	// RemovalPolicyAllow signals that removing an existing constraint
+	// should be considered a compatible change.
+	RemovalPolicyAllow RemovalPolicy = "Allow"
+
+	// RemovalPolicyDisallow signals that removing an existing constraint
+	// should be considered an incompatible change.
+	RemovalPolicyDisallow RemovalPolicy = "Disallow"
+)
+
+var errUnknownRemovalPolicy = errors.New("unknown removal policy")
 
 // OneOfConfig contains additional configurations for the OneOf validation.
 type OneOfConfig struct {
@@ -90,6 +111,15 @@ type OneOfConfig struct {
 	// oneOf constraint will be flagged.
 	// Defaults to Disallow.
 	AdditionPolicy AdditionPolicy `json:"additionPolicy,omitempty"`
+	// removalPolicy is how removing subschemas from an existing oneOf
+	// constraint should be treated.
+	// Allowed values are Allow and Disallow.
+	// When set to Allow, removing subschemas from an existing
+	// oneOf constraint will not be flagged.
+	// When set to Disallow, removing subschemas from an existing
+	// oneOf constraint will be flagged.
+	// Defaults to Disallow.
+	RemovalPolicy RemovalPolicy `json:"removalPolicy,omitempty"`
 }
 
 // OneOf is a Validation that can be used to identify
@@ -119,29 +149,15 @@ func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compa
 	oldSchemas := sets.New[string]()
 
 	for i := range a.OneOf {
-		key, err := marshalSchema(a.OneOf[i])
-		if err != nil {
-			a.OneOf = nil
-			b.OneOf = nil
-
-			return validations.HandleErrors(o.Name(), o.enforcement, fmt.Errorf("marshaling old oneOf schema at index %d: %w", i, err))
-		}
-
-		oldSchemas.Insert(key)
+		normalizeSchema(&a.OneOf[i])
+		oldSchemas.Insert(a.OneOf[i].String())
 	}
 
 	newSchemas := sets.New[string]()
 
 	for i := range b.OneOf {
-		key, err := marshalSchema(b.OneOf[i])
-		if err != nil {
-			a.OneOf = nil
-			b.OneOf = nil
-
-			return validations.HandleErrors(o.Name(), o.enforcement, fmt.Errorf("marshaling new oneOf schema at index %d: %w", i, err))
-		}
-
-		newSchemas.Insert(key)
+		normalizeSchema(&b.OneOf[i])
+		newSchemas.Insert(b.OneOf[i].String())
 	}
 
 	removedSchemas := oldSchemas.Difference(newSchemas)
@@ -154,7 +170,7 @@ func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compa
 		newSchemaSlice := newSchemas.UnsortedList()
 		slices.Sort(newSchemaSlice)
 		err = fmt.Errorf("%w: %v", ErrNetNewOneOfConstraint, newSchemaSlice)
-	case removedSchemas.Len() > 0:
+	case removedSchemas.Len() > 0 && o.RemovalPolicy != RemovalPolicyAllow:
 		removedSchemaSlice := removedSchemas.UnsortedList()
 		slices.Sort(removedSchemaSlice)
 		err = fmt.Errorf("%w: %v", ErrRemovedOneOf, removedSchemaSlice)
@@ -170,19 +186,13 @@ func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compa
 	return validations.HandleErrors(o.Name(), o.enforcement, err)
 }
 
-// marshalSchema produces a canonical JSON string for a schema,
-// ignoring non-structural fields (Description, Example) so that
-// only validation-relevant differences are compared.
-func marshalSchema(schema apiextensionsv1.JSONSchemaProps) (string, error) {
+// normalizeSchema zeroes non-structural fields on a schema
+// so that only validation-relevant differences are compared.
+func normalizeSchema(schema *apiextensionsv1.JSONSchemaProps) {
 	schema.Description = ""
+	schema.Title = ""
 	schema.Example = nil
-
-	data, err := json.Marshal(schema)
-	if err != nil {
-		return "", fmt.Errorf("marshaling schema: %w", err)
-	}
-
-	return string(data), nil
+	schema.ExternalDocs = nil
 }
 
 var (
