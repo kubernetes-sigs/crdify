@@ -68,6 +68,41 @@ func TestOneOf(t *testing.T) {
 			ComparableValidation: &OneOf{},
 		},
 		{
+			Name: "new oneOf constraint, addition policy set to Allow, pre-existing schema preserved, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Type: "integer",
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{Type: "integer"},
+					{Type: "string"},
+				},
+			},
+			Flagged: false,
+			ComparableValidation: &OneOf{
+				OneOfConfig: OneOfConfig{
+					AdditionPolicy: AdditionPolicyAllow,
+				},
+			},
+		},
+		{
+			Name: "new oneOf constraint, addition policy set to Allow, pre-existing schema not preserved, flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				Type: "string",
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{Type: "integer"},
+				},
+			},
+			Flagged: true,
+			ComparableValidation: &OneOf{
+				OneOfConfig: OneOfConfig{
+					AdditionPolicy: AdditionPolicyAllow,
+				},
+			},
+		},
+		{
 			Name: "removed oneOf subschema, removal policy not set, flagged",
 			Old: &apiextensionsv1.JSONSchemaProps{
 				OneOf: []apiextensionsv1.JSONSchemaProps{

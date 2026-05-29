@@ -167,9 +167,7 @@ func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compa
 
 	switch {
 	case oldSchemas.Len() == 0 && newSchemas.Len() > 0:
-		newSchemaSlice := newSchemas.UnsortedList()
-		slices.Sort(newSchemaSlice)
-		err = fmt.Errorf("%w: %v", ErrNetNewOneOfConstraint, newSchemaSlice)
+		err = o.checkNetNewOneOf(a, newSchemas)
 	case removedSchemas.Len() > 0 && o.RemovalPolicy != RemovalPolicyAllow:
 		removedSchemaSlice := removedSchemas.UnsortedList()
 		slices.Sort(removedSchemaSlice)
@@ -184,6 +182,33 @@ func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compa
 	b.OneOf = nil
 
 	return validations.HandleErrors(o.Name(), o.enforcement, err)
+}
+
+// checkNetNewOneOf evaluates whether a net-new oneOf constraint is
+// an incompatible change. When additionPolicy is Allow and the
+// pre-existing property schema is preserved as one of the new oneOf
+// entries, the change is considered compatible.
+func (o *OneOf) checkNetNewOneOf(old *apiextensionsv1.JSONSchemaProps, newSchemas sets.Set[string]) error {
+	if o.AdditionPolicy == AdditionPolicyAllow && preExistingSchemaPreserved(old, newSchemas) {
+		return nil
+	}
+
+	newSchemaSlice := newSchemas.UnsortedList()
+	slices.Sort(newSchemaSlice)
+
+	return fmt.Errorf("%w: %v", ErrNetNewOneOfConstraint, newSchemaSlice)
+}
+
+// preExistingSchemaPreserved checks whether the old property schema
+// (with its OneOf field cleared) appears as one of the entries in the
+// new oneOf constraint. This is used to determine if a net-new oneOf
+// is a safe loosening change for writer-focused APIs.
+func preExistingSchemaPreserved(old *apiextensionsv1.JSONSchemaProps, newSchemas sets.Set[string]) bool {
+	oldCopy := *old
+	oldCopy.OneOf = nil
+	normalizeSchema(&oldCopy)
+
+	return newSchemas.Has(oldCopy.String())
 }
 
 // normalizeSchema zeroes non-structural fields on a schema
