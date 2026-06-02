@@ -181,3 +181,40 @@ validations:
     configuration:
       removalPolicy: Allow
 ```
+
+### oneOf
+
+Validates compatibility of changes to the `oneOf` constraint on a property. The `oneOf` constraint restricts a property's value to matching exactly one of the listed subschemas.
+
+Incompatible changes are:
+
+- Adding a `oneOf` constraint when there was none previously
+- Removing a previously allowed subschema from a `oneOf` constraint
+- Adding a new subschema to a `oneOf` constraint
+
+#### Configuration
+
+The `oneOf` validation has unique configuration options that can be used to change how it determines compatibility of a change to `oneOf` constraints on a property:
+
+- `additionPolicy` - used to configure how compatibility is determined when adding new subschemas to an existing `oneOf` constraint. Allowed values are `Allow` and `Disallow`. When set to `Allow`, adding a new subschema is considered a compatible change. When set to `Disallow`, adding a new subschema is considered an incompatible change. The default is `Disallow`.
+- `removalPolicy` - used to configure how compatibility is determined when removing subschemas from an existing `oneOf` constraint. Allowed values are `Allow` and `Disallow`. When set to `Allow`, removing a subschema is considered a compatible change. When set to `Disallow`, removing a subschema is considered an incompatible change. The default is `Disallow`.
+
+An example of configuring the `oneOf` validation to allow adding a new subschema:
+
+```yaml
+validations:
+  - name: oneOf
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
+```
+
+An example of configuring the `oneOf` validation to allow removing a subschema:
+
+```yaml
+validations:
+  - name: oneOf
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow
+```

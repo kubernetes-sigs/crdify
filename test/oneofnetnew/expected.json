@@ -1,0 +1,26 @@
+{
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.port",
+     "comparisonResults": [
+      {
+       "name": "oneOf",
+       "errors": [
+        "oneOf constraint added when there was none previously: [\u0026JSONSchemaProps{ID:,Schema:,Ref:nil,Description:,Type:integer,Format:,Title:,Default:nil,Maximum:nil,ExclusiveMaximum:false,Minimum:nil,ExclusiveMinimum:false,MaxLength:nil,MinLength:nil,Pattern:,MaxItems:nil,MinItems:nil,UniqueItems:false,MultipleOf:nil,Enum:[]JSON{},MaxProperties:nil,MinProperties:nil,Required:[],Items:nil,AllOf:[]JSONSchemaProps{},OneOf:[]JSONSchemaProps{},AnyOf:[]JSONSchemaProps{},Not:nil,Properties:map[string]JSONSchemaProps{},AdditionalProperties:nil,PatternProperties:map[string]JSONSchemaProps{},Dependencies:JSONSchemaDependencies{},AdditionalItems:nil,Definitions:JSONSchemaDefinitions{},ExternalDocs:nil,Example:nil,Nullable:false,XPreserveUnknownFields:nil,XEmbeddedResource:false,XIntOrString:false,XListMapKeys:[],XListType:nil,XMapType:nil,XValidations:[]ValidationRule{},} \u0026JSONSchemaProps{ID:,Schema:,Ref:nil,Description:,Type:string,Format:,Title:,Default:nil,Maximum:nil,ExclusiveMaximum:false,Minimum:nil,ExclusiveMinimum:false,MaxLength:nil,MinLength:nil,Pattern:,MaxItems:nil,MinItems:nil,UniqueItems:false,MultipleOf:nil,Enum:[]JSON{},MaxProperties:nil,MinProperties:nil,Required:[],Items:nil,AllOf:[]JSONSchemaProps{},OneOf:[]JSONSchemaProps{},AnyOf:[]JSONSchemaProps{},Not:nil,Properties:map[string]JSONSchemaProps{},AdditionalProperties:nil,PatternProperties:map[string]JSONSchemaProps{},Dependencies:JSONSchemaDependencies{},AdditionalItems:nil,Definitions:JSONSchemaDefinitions{},ExternalDocs:nil,Example:nil,Nullable:false,XPreserveUnknownFields:nil,XEmbeddedResource:false,XIntOrString:false,XListMapKeys:[],XListType:nil,XMapType:nil,XValidations:[]ValidationRule{},}]"
+       ]
+      },
+      {
+       "name": "type",
+       "errors": [
+        "type changed : \"integer\" -\u003e \"\""
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
