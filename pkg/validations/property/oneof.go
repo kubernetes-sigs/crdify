@@ -189,14 +189,18 @@ func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.Compa
 // pre-existing property schema is preserved as one of the new oneOf
 // entries, the change is considered compatible.
 func (o *OneOf) checkNetNewOneOf(old *apiextensionsv1.JSONSchemaProps, newSchemas sets.Set[string]) error {
-	if o.AdditionPolicy == AdditionPolicyAllow && preExistingSchemaPreserved(old, newSchemas) {
-		return nil
-	}
-
 	newSchemaSlice := newSchemas.UnsortedList()
 	slices.Sort(newSchemaSlice)
 
-	return fmt.Errorf("%w: %v", ErrNetNewOneOfConstraint, newSchemaSlice)
+	if o.AdditionPolicy != AdditionPolicyAllow {
+		return fmt.Errorf("%w: %v", ErrNetNewOneOfConstraint, newSchemaSlice)
+	}
+
+	if !preExistingSchemaPreserved(old, newSchemas) {
+		return fmt.Errorf("%w: %v", ErrNetNewOneOfPreExistingSchemaNotPreserved, newSchemaSlice)
+	}
+
+	return nil
 }
 
 // preExistingSchemaPreserved checks whether the old property schema
@@ -204,9 +208,9 @@ func (o *OneOf) checkNetNewOneOf(old *apiextensionsv1.JSONSchemaProps, newSchema
 // new oneOf constraint. This is used to determine if a net-new oneOf
 // is a safe loosening change for writer-focused APIs.
 func preExistingSchemaPreserved(old *apiextensionsv1.JSONSchemaProps, newSchemas sets.Set[string]) bool {
-	oldCopy := *old
+	oldCopy := old.DeepCopy()
 	oldCopy.OneOf = nil
-	normalizeSchema(&oldCopy)
+	normalizeSchema(oldCopy)
 
 	return newSchemas.Has(oldCopy.String())
 }
@@ -223,6 +227,9 @@ func normalizeSchema(schema *apiextensionsv1.JSONSchemaProps) {
 var (
 	// ErrNetNewOneOfConstraint represents an error state where a net new oneOf constraint was added to a property.
 	ErrNetNewOneOfConstraint = errors.New("oneOf constraint added when there was none previously")
+	// ErrNetNewOneOfPreExistingSchemaNotPreserved represents an error state where a net new oneOf constraint was added
+	// but the pre-existing property schema is not preserved as one of the new oneOf entries, breaking both readers and writers.
+	ErrNetNewOneOfPreExistingSchemaNotPreserved = errors.New("oneOf constraint added and pre-existing property schema is not preserved in the new oneOf entries")
 	// ErrRemovedOneOf represents an error state where at least one previously allowed oneOf subschema was removed
 	// from the oneOf constraint on a property.
 	ErrRemovedOneOf = errors.New("allowed oneOf schemas removed")
