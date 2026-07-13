@@ -182,6 +182,18 @@ validations:
       removalPolicy: Allow
 ```
 
+### anyOf
+
+Validates compatibility of changes to the `anyOf` constraint on a property. The `anyOf` constraint allows a property's value to match at least one of the listed subschemas.
+
+Incompatible changes are:
+
+- Adding an `anyOf` constraint when there was none previously
+- Removing a previously allowed subschema from an `anyOf` constraint
+- Changing an existing subschema in an `anyOf` constraint
+
+Adding a new subschema to an existing `anyOf` constraint is considered compatible because it allows additional values without invalidating values that were already accepted.
+
 ### oneOf
 
 Validates compatibility of changes to the `oneOf` constraint on a property. The `oneOf` constraint restricts a property's value to matching exactly one of the listed subschemas.
