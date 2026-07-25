@@ -218,3 +218,27 @@ validations:
     configuration:
       removalPolicy: Allow
 ```
+
+### xvalidations
+
+Validates compatibility of changes to a property's `x-kubernetes-validations` rules.
+Rules are identified by a hash of their semantically significant fields: `rule`, `reason`, and `optionalOldSelf`.
+Changes to `message`, `messageExpression`, and `fieldPath` are not tracked and will never be flagged.
+
+#### Configuration
+
+The `xvalidations` validation can be configured to allow changes:
+
+- `additionPolicy` - controls whether adding a new rule is considered compatible. Allowed values are `Allow` and `Disallow`. When set to `Allow`, the validation does not flag this change. The default is `Disallow` to ensure new server-side restrictions are reviewed.
+- `removalPolicy` - controls whether removing an existing rule is considered compatible. Allowed values are `Allow` and `Disallow`. When set to `Allow`, the validation does not flag this change. The default is `Disallow` to protect clients that rely on existing validation behavior.
+
+Example configuration that allows adding and removing rules:
+
+```yaml
+validations:
+  - name: xvalidations
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
+      removalPolicy: Allow
+```

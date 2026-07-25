@@ -1,0 +1,21 @@
+{
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.code",
+     "comparisonResults": [
+      {
+       "name": "xvalidations",
+       "errors": [
+        "x-kubernetes-validations removed: {\"rule\":\"self == oldSelf\",\"message\":\"field is immutable\",\"reason\":\"FieldValueForbidden\"}",
+        "x-kubernetes-validations added: {\"rule\":\"self == oldSelf\",\"message\":\"field is immutable\",\"reason\":\"FieldValueInvalid\"}"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

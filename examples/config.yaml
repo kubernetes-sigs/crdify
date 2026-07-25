@@ -23,3 +23,9 @@ validations:
     configuration:
       additionPolicy: Allow
       removalPolicy: Allow
+  # example of configuring xvalidations validation to allow adding and removing x-kubernetes-validation rules
+  - name: xvalidations
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
+      removalPolicy: Allow
