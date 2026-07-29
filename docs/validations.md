@@ -218,3 +218,40 @@ validations:
     configuration:
       removalPolicy: Allow
 ```
+
+### exclusiveMaximum
+
+Validates compatibility of changes to the `exclusiveMaximum` constraint on a property.
+When `exclusiveMaximum` is activated, the maximum value itself becomes an exclusive upper bound, which
+tightens the allowed range for writers and is considered a breaking change.
+When `exclusiveMaximum` is removed, the maximum value becomes an inclusive upper bound, which loosens the
+allowed range for writers, but can break readers that were built against the previously stricter constraint.
+Because whether either direction is actually breaking depends on whether you care about writer or reader
+semantics, both directions are flagged by default and can be independently configured.
+
+#### Configuration
+
+The `exclusiveMaximum` validation can be configured to allow adding and/or removing the constraint when you know the change is safe:
+
+- `additionPolicy` - controls whether adding `exclusiveMaximum` is considered compatible. Allowed values are `Allow` and `Disallow`. When set to `Allow`, adding `exclusiveMaximum` is not flagged. The default is `Disallow` to remain maximally conservative.
+- `removalPolicy` - controls whether removing `exclusiveMaximum` is considered compatible. Allowed values are `Allow` and `Disallow`. When set to `Allow`, removing `exclusiveMaximum` is not flagged. The default is `Disallow` to remain maximally conservative.
+
+Example configuration that allows adding `exclusiveMaximum`:
+
+```yaml
+validations:
+  - name: exclusiveMaximum
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
+```
+
+Example configuration that allows removing `exclusiveMaximum`:
+
+```yaml
+validations:
+  - name: exclusiveMaximum
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow
+```

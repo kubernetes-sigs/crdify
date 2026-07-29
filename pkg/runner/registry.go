@@ -32,6 +32,7 @@ func init() {
 	property.RegisterDefault(defaultRegistry)
 	property.RegisterEnum(defaultRegistry)
 	property.RegisterMaximum(defaultRegistry)
+	property.RegisterExclusiveMaximum(defaultRegistry)
 	property.RegisterMaxItems(defaultRegistry)
 	property.RegisterMaxLength(defaultRegistry)
 	property.RegisterMaxProperties(defaultRegistry)
