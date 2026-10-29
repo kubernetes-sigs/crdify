@@ -11,6 +11,12 @@ validations:
     enforcement: Error
     configuration:
       removalPolicy: Allow
+  # example of configuring allOf validation to allow addition of new subschemas and removal of existing subschemas
+  - name: allOf
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
+      removalPolicy: Allow
   # example of configuring nullable validation to allow making a field nullable and removing nullable support
   - name: nullable
     enforcement: Error

@@ -1,0 +1,20 @@
+{
+ "sameVersionValidation": [
+  {
+   "version": "v1",
+   "propertyComparisons": [
+    {
+     "property": "^.spec.port",
+     "comparisonResults": [
+      {
+       "name": "allOf",
+       "errors": [
+        "allOf schemas added: [{\"maximum\":65535} {\"minimum\":1}]"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

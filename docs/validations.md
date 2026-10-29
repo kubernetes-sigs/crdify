@@ -149,6 +149,60 @@ validations:
       removalPolicy: Allow
 ```
 
+### allOf
+
+Validates compatibility of changes to a property's `allOf` constraints. The `allOf` keyword
+requires a value to satisfy all of the listed subschemas. Adding new subschemas tightens
+validation and may invalidate previously valid values. Removing subschemas loosens
+validation and may allow values that existing clients cannot handle.
+
+Incompatible changes are:
+
+- Adding new subschemas to an `allOf` constraint, including adding an `allOf` constraint when there was none previously
+- Removing subschemas from an existing `allOf` constraint
+
+Subschemas are compared as a set, after stripping non-validation fields (`description`, `title`,
+`example` and `externalDocs`) and ignoring the order of `required` and `enum` entries at every
+level, so documentation-only changes are not flagged. A modified subschema is reported as both a
+removal and an addition.
+
+#### Configuration
+
+The `allOf` validation has unique configuration options that can be used to change how it determines compatibility of a change to `allOf` constraints on a property:
+
+- `additionPolicy` - used to configure how compatibility is determined when adding new subschemas to an `allOf` constraint, including adding an `allOf` constraint when there was none previously. Allowed values are `Allow` and `Disallow`. When set to `Allow`, adding a new subschema is considered a compatible change. When set to `Disallow`, adding a new subschema is considered an incompatible change. The default is `Disallow`.
+- `removalPolicy` - used to configure how compatibility is determined when removing subschemas from an existing `allOf` constraint. Allowed values are `Allow` and `Disallow`. When set to `Allow`, removing a subschema is considered a compatible change. When set to `Disallow`, removing a subschema is considered an incompatible change. The default is `Disallow`.
+
+An example of configuring the `allOf` validation to allow adding a new subschema:
+
+```yaml
+validations:
+  - name: allOf
+    enforcement: Error
+    configuration:
+      additionPolicy: Allow
+```
+
+An example of configuring the `allOf` validation to allow removing a subschema:
+
+```yaml
+validations:
+  - name: allOf
+    enforcement: Error
+    configuration:
+      removalPolicy: Allow
+```
+
+Each `allOf` subschema is also tracked by its position (for example `^.spec.port.allOf[0]`), and
+its contents are checked by the other validations independent of the `allOf` configuration. This
+means:
+
+- Removing a subschema is also reported by the `existingFieldRemoval` validation.
+- Reordering subschemas is reported by the validations for the constraints whose position changed
+  (for example `minimum` and `maximum`), even though the `allOf` validation does not flag it.
+- Modifying a subschema is also reported by the validation for the modified constraint (for example
+  `minimum increased` on `allOf[0]`), even when `additionPolicy` and `removalPolicy` are set to `Allow`.
+
 ### nullable
 
 Validates compatibility of changes to a property's nullable constraint. Allowing null values for a field

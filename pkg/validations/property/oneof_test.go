@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/utils/ptr"
 	internaltesting "sigs.k8s.io/crdify/pkg/validations/internal/testing"
 )
 
@@ -237,6 +238,31 @@ func TestOneOf(t *testing.T) {
 				ID: "bar",
 				OneOf: []apiextensionsv1.JSONSchemaProps{
 					{Type: "integer"},
+				},
+			},
+			Flagged:              false,
+			ComparableValidation: &OneOf{},
+		},
+		{
+			Name: "nested description changed in subschema, not flagged",
+			Old: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{
+						Type: "object",
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"port": {Type: "integer", Description: "old", Minimum: ptr.To[float64](1)},
+						},
+					},
+				},
+			},
+			New: &apiextensionsv1.JSONSchemaProps{
+				OneOf: []apiextensionsv1.JSONSchemaProps{
+					{
+						Type: "object",
+						Properties: map[string]apiextensionsv1.JSONSchemaProps{
+							"port": {Type: "integer", Description: "new", Minimum: ptr.To[float64](1)},
+						},
+					},
 				},
 			},
 			Flagged:              false,

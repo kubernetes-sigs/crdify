@@ -146,18 +146,14 @@ func (o *OneOf) SetEnforcement(policy config.EnforcementPolicy) {
 // It is highly recommended that only copies of the JSONSchemaProps to compare are provided to this method
 // to prevent unintentional modifications.
 func (o *OneOf) Compare(a, b *apiextensionsv1.JSONSchemaProps) validations.ComparisonResult {
-	oldSchemas := sets.New[string]()
+	oldSchemas, oldErr := schemaKeys(a.OneOf)
+	newSchemas, newErr := schemaKeys(b.OneOf)
 
-	for i := range a.OneOf {
-		normalizeSchema(&a.OneOf[i])
-		oldSchemas.Insert(a.OneOf[i].String())
-	}
+	if err := errors.Join(oldErr, newErr); err != nil {
+		a.OneOf = nil
+		b.OneOf = nil
 
-	newSchemas := sets.New[string]()
-
-	for i := range b.OneOf {
-		normalizeSchema(&b.OneOf[i])
-		newSchemas.Insert(b.OneOf[i].String())
+		return validations.HandleErrors(o.Name(), o.enforcement, err)
 	}
 
 	removedSchemas := oldSchemas.Difference(newSchemas)
@@ -196,7 +192,12 @@ func (o *OneOf) checkNetNewOneOf(old *apiextensionsv1.JSONSchemaProps, newSchema
 		return fmt.Errorf("%w: %v", ErrNetNewOneOfConstraint, newSchemaSlice)
 	}
 
-	if !preExistingSchemaPreserved(old, newSchemas) {
+	preserved, err := preExistingSchemaPreserved(old, newSchemas)
+	if err != nil {
+		return err
+	}
+
+	if !preserved {
 		return fmt.Errorf("%w: %v", ErrNetNewOneOfPreExistingSchemaNotPreserved, newSchemaSlice)
 	}
 
@@ -207,21 +208,16 @@ func (o *OneOf) checkNetNewOneOf(old *apiextensionsv1.JSONSchemaProps, newSchema
 // (with its OneOf field cleared) appears as one of the entries in the
 // new oneOf constraint. This is used to determine if a net-new oneOf
 // is a safe loosening change for writer-focused APIs.
-func preExistingSchemaPreserved(old *apiextensionsv1.JSONSchemaProps, newSchemas sets.Set[string]) bool {
+func preExistingSchemaPreserved(old *apiextensionsv1.JSONSchemaProps, newSchemas sets.Set[string]) (bool, error) {
 	oldCopy := old.DeepCopy()
 	oldCopy.OneOf = nil
-	normalizeSchema(oldCopy)
 
-	return newSchemas.Has(oldCopy.String())
-}
+	key, err := schemaKey(oldCopy)
+	if err != nil {
+		return false, err
+	}
 
-// normalizeSchema zeroes non-structural fields on a schema
-// so that only validation-relevant differences are compared.
-func normalizeSchema(schema *apiextensionsv1.JSONSchemaProps) {
-	schema.Description = ""
-	schema.Title = ""
-	schema.Example = nil
-	schema.ExternalDocs = nil
+	return newSchemas.Has(key), nil
 }
 
 var (
