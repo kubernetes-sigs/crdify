@@ -33,6 +33,16 @@ type Loader interface {
 	Load(context.Context, *url.URL) (*apiextensionsv1.CustomResourceDefinition, error)
 }
 
+// MultiLoader is implemented by a Loader that can load every CustomResourceDefinition
+// from a source location, such as a file holding several YAML documents.
+type MultiLoader interface {
+	// LoadAll uses the provided context and URL to determine how to
+	// source every CustomResourceDefinition.
+	// Upon successful sourcing, at least one CustomResourceDefinition and a nil error should be returned.
+	// Upon failed sourcing, nil CustomResourceDefinitions and a non-nil error should be returned.
+	LoadAll(context.Context, *url.URL) ([]*apiextensionsv1.CustomResourceDefinition, error)
+}
+
 // Composite is a utility type that is used to encapsulate
 // the behavior of multiple loaders into a single implementation.
 // It uses the scheme of a URL as the key for which encapsulated Loader
@@ -73,6 +83,38 @@ func (c *Composite) Load(ctx context.Context, location string) (*apiextensionsv1
 	}
 
 	return crd, nil
+}
+
+// LoadAll is used to source every CustomResourceDefinition using the provided context and source string.
+// It selects the nested Loader like Load does. If that Loader implements MultiLoader,
+// LoadAll calls its LoadAll method. Otherwise it returns the single CustomResourceDefinition from Load.
+func (c *Composite) LoadAll(ctx context.Context, location string) ([]*apiextensionsv1.CustomResourceDefinition, error) {
+	locationURL, err := url.Parse(location)
+	if err != nil {
+		return nil, fmt.Errorf("parsing source: %w", err)
+	}
+
+	loader, ok := c.loaders[locationURL.Scheme]
+	if !ok {
+		return nil, fmt.Errorf("%w : %q", errNoLoader, locationURL.Scheme)
+	}
+
+	multiLoader, ok := loader.(MultiLoader)
+	if !ok {
+		crd, err := loader.Load(ctx, locationURL)
+		if err != nil {
+			return nil, fmt.Errorf("loading CustomResourceDefinition: %w", err)
+		}
+
+		return []*apiextensionsv1.CustomResourceDefinition{crd}, nil
+	}
+
+	crds, err := multiLoader.LoadAll(ctx, locationURL)
+	if err != nil {
+		return nil, fmt.Errorf("loading CustomResourceDefinitions: %w", err)
+	}
+
+	return crds, nil
 }
 
 var errNoLoader = errors.New("no loader found for provided scheme")

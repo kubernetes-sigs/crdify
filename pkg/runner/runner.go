@@ -72,3 +72,31 @@ func (i *Runner) Run(oldCrd, newCrd *apiextensionsv1.CustomResourceDefinition) *
 		ServedVersionValidation: i.servedVersionValidator.Validate(oldCrd, newCrd),
 	}
 }
+
+// RunByName pairs the old and new CustomResourceDefinitions by name, executes all the validators
+// on each pair and returns the results keyed by name.
+// A CustomResourceDefinition that is only in oldCrds has been removed and is reported as an error.
+// A CustomResourceDefinition that is only in newCrds has been added and is not validated.
+func (i *Runner) RunByName(oldCrds, newCrds []*apiextensionsv1.CustomResourceDefinition) ResultsByName {
+	newCrdsByName := make(map[string]*apiextensionsv1.CustomResourceDefinition, len(newCrds))
+	for _, newCrd := range newCrds {
+		newCrdsByName[newCrd.Name] = newCrd
+	}
+
+	results := make(ResultsByName, len(oldCrds))
+
+	for _, oldCrd := range oldCrds {
+		newCrd, ok := newCrdsByName[oldCrd.Name]
+		if !ok {
+			results[oldCrd.Name] = &Results{
+				CRDValidation: []validations.ComparisonResult{{Name: "removed", Errors: []string{"CustomResourceDefinition removed"}}},
+			}
+
+			continue
+		}
+
+		results[oldCrd.Name] = i.Run(oldCrd, newCrd)
+	}
+
+	return results
+}

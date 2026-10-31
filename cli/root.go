@@ -61,7 +61,10 @@ Example use cases:
         $ crdify file://{filepath} file://{filepath}
 
     Evaluating a change from git ref to git ref:
-            $ crdify git://{ref}?path={filepath} git://{ref}?path={filepath}`,
+            $ crdify git://{ref}?path={filepath} git://{ref}?path={filepath}
+
+When a file holds more than one CustomResourceDefinition, the old and new CustomResourceDefinitions
+are paired by name. Removing a CustomResourceDefinition is reported as an error.`,
 		Args: cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Load(configFile)
@@ -74,17 +77,27 @@ Example use cases:
 				log.Fatalf("configuring validation runner: %v", err)
 			}
 
-			oldCrd, err := loader.Load(cmd.Context(), args[0])
+			oldCrds, err := loader.LoadAll(cmd.Context(), args[0])
 			if err != nil {
 				log.Fatalf("loading old CustomResourceDefinition: %v", err)
 			}
 
-			newCrd, err := loader.Load(cmd.Context(), args[1])
+			newCrds, err := loader.LoadAll(cmd.Context(), args[1])
 			if err != nil {
 				log.Fatalf("loading new CustomResourceDefinition: %v", err)
 			}
 
-			results := run.Run(oldCrd, newCrd)
+			var results interface {
+				Render(format runner.Format) (string, error)
+				HasFailures() bool
+			}
+
+			// A single CustomResourceDefinition on each side is compared whatever its name, as before.
+			if len(oldCrds) == 1 && len(newCrds) == 1 {
+				results = run.Run(oldCrds[0], newCrds[0])
+			} else {
+				results = run.RunByName(oldCrds, newCrds)
+			}
 
 			report, err := results.Render(runner.Format(outputFormat))
 			if err != nil {
