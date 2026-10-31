@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -294,6 +295,54 @@ func processVersionedComparisonResults(vcrs []version.VersionedPropertyCompariso
 			}
 		}
 	}
+}
+
+// ResultsByName holds the validation results of each compared
+// CustomResourceDefinition, keyed by the CustomResourceDefinition name.
+type ResultsByName map[string]*Results
+
+// Render returns the string representation of the provided
+// format or an error if one is encountered.
+// The json and yaml formats render an object keyed by name.
+// The plaintext and markdown formats render each name that has results, followed by its results.
+func (rbn ResultsByName) Render(format Format) (string, error) {
+	switch format {
+	case FormatJSON:
+		outBytes, err := json.MarshalIndent(rbn, "", " ")
+		return string(outBytes), err
+	case FormatYAML:
+		outBytes, err := yaml.Marshal(rbn)
+		return string(outBytes), err
+	case FormatMarkdown:
+		return rbn.renderEach("## %s\n\n%s\n", (*Results).RenderMarkdown), nil
+	case FormatPlainText:
+		return rbn.renderEach("%s:\n%s", (*Results).RenderPlainText), nil
+	default:
+		return "", fmt.Errorf("%w : %q", errUnknownRenderFormat, format)
+	}
+}
+
+func (rbn ResultsByName) renderEach(layout string, render func(*Results) string) string {
+	var out strings.Builder
+
+	for _, name := range slices.Sorted(maps.Keys(rbn)) {
+		if rendered := render(rbn[name]); rendered != "" {
+			out.WriteString(fmt.Sprintf(layout, name, rendered))
+		}
+	}
+
+	return out.String()
+}
+
+// HasFailures returns a boolean signaling if the validation results of any CustomResourceDefinition contain any errors.
+func (rbn ResultsByName) HasFailures() bool {
+	for _, results := range rbn {
+		if results.HasFailures() {
+			return true
+		}
+	}
+
+	return false
 }
 
 // HasFailures returns a boolean signaling if any of the validation results contain any errors.

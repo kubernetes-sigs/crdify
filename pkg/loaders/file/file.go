@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/afero"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"sigs.k8s.io/crdify/pkg/loaders/decode"
 )
 
 // File is a Loader implementation to load a CustomResourceDefinition
@@ -46,21 +47,9 @@ func New(filesystem afero.Fs) *File {
 // Load parses the hostname and path of the provided URL to determine the file containing the CustomResourceDefinition
 // and reads it into a new CustomResourceDefinition object.
 func (f *File) Load(_ context.Context, location *url.URL) (*apiextensionsv1.CustomResourceDefinition, error) {
-	filePath, err := filepath.Abs(path.Join(location.Hostname(), location.Path))
+	filePath, fileBytes, err := f.read(location)
 	if err != nil {
-		return nil, fmt.Errorf("ensuring absolute path: %w", err)
-	}
-
-	file, err := f.filesystem.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("opening file %q: %w", filePath, err)
-	}
-	//nolint:errcheck
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("reading file %q: %w", filePath, err)
+		return nil, err
 	}
 
 	crd := &apiextensionsv1.CustomResourceDefinition{}
@@ -71,4 +60,42 @@ func (f *File) Load(_ context.Context, location *url.URL) (*apiextensionsv1.Cust
 	}
 
 	return crd, nil
+}
+
+// LoadAll determines the file like Load does and reads every CustomResourceDefinition in it.
+// Empty documents and documents of any other kind are skipped.
+func (f *File) LoadAll(_ context.Context, location *url.URL) ([]*apiextensionsv1.CustomResourceDefinition, error) {
+	filePath, fileBytes, err := f.read(location)
+	if err != nil {
+		return nil, err
+	}
+
+	crds, err := decode.CRDs(fileBytes)
+	if err != nil {
+		return nil, fmt.Errorf("decoding contents of file %q: %w", filePath, err)
+	}
+
+	return crds, nil
+}
+
+// read returns the absolute path and the contents of the file that the hostname and path of the provided URL point to.
+func (f *File) read(location *url.URL) (string, []byte, error) {
+	filePath, err := filepath.Abs(path.Join(location.Hostname(), location.Path))
+	if err != nil {
+		return "", nil, fmt.Errorf("ensuring absolute path: %w", err)
+	}
+
+	file, err := f.filesystem.Open(filePath)
+	if err != nil {
+		return "", nil, fmt.Errorf("opening file %q: %w", filePath, err)
+	}
+	//nolint:errcheck
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		return "", nil, fmt.Errorf("reading file %q: %w", filePath, err)
+	}
+
+	return filePath, fileBytes, nil
 }

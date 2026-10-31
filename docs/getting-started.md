@@ -26,6 +26,9 @@ Example use cases:
     Evaluating a change from git ref to git ref:
             $ crdify git://{ref}?path={filepath} git://{ref}?path={filepath}
 
+When a file holds more than one CustomResourceDefinition, the old and new CustomResourceDefinitions
+are paired by name. Removing a CustomResourceDefinition is reported as an error.
+
 Usage:
   crdify <old> <new> [flags]
   crdify [command]
